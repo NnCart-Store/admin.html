@@ -3,47 +3,48 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>NNCart Pro Admin</title>
+
+<title>NNCart Ultimate Admin</title>
 
 <script src="https://cdn.tailwindcss.com"></script>
 <script src="https://unpkg.com/html5-qrcode"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 
+<style>
+body{background:#f3f4f6}
+</style>
+
 </head>
 
-<body class="bg-gray-100 p-3">
+<body class="p-3">
 
-<h1 class="text-xl font-bold mb-3">🔥 NNCart PRO Admin</h1>
+<h1 class="text-xl font-bold mb-3">NNCart Admin Panel</h1>
 
 <!-- STATS -->
-<div class="grid grid-cols-4 gap-2 mb-3">
+<div class="grid grid-cols-3 gap-2 mb-3">
 <div class="bg-white p-2 text-center shadow rounded"><b id="ordersCount">0</b><br>Orders</div>
 <div class="bg-white p-2 text-center shadow rounded"><b id="revenue">0</b><br>Revenue</div>
 <div class="bg-white p-2 text-center shadow rounded"><b id="pending">0</b><br>Pending</div>
-<div class="bg-white p-2 text-center shadow rounded"><b id="lowStock">0</b><br>Low Stock</div>
 </div>
 
-<input id="search" placeholder="Search..." class="border p-2 w-full mb-3 rounded">
+<input id="search" placeholder="Search Customer..." class="border p-2 w-full mb-3 rounded">
 
-<!-- PRODUCT BOX -->
+<!-- PRODUCT ADD -->
 <div class="bg-white p-3 rounded shadow mb-3">
+<h2 class="font-bold mb-2">Add / Scan Product</h2>
 
-<h2 class="font-bold mb-2">Add / Edit Product</h2>
+<input id="barcode" placeholder="Barcode" class="border p-2 w-full mb-1 rounded">
+<input id="pname" placeholder="Product Name" class="border p-2 w-full mb-1 rounded">
+<input id="price" placeholder="Price" class="border p-2 w-full mb-1 rounded">
+<input id="image" placeholder="Image URL" class="border p-2 w-full mb-1 rounded">
+<input id="category" placeholder="Category" class="border p-2 w-full mb-1 rounded">
+<input id="stock" placeholder="Stock" class="border p-2 w-full mb-1 rounded">
+<input id="color" placeholder="Color" class="border p-2 w-full mb-1 rounded">
+<input id="size" placeholder="Size" class="border p-2 w-full mb-1 rounded">
 
-<input id="barcode" placeholder="Barcode" class="border p-2 w-full mb-1">
-<input id="pname" placeholder="Product Name" class="border p-2 w-full mb-1">
-<input id="price" placeholder="Price" class="border p-2 w-full mb-1">
-<input id="image" placeholder="Image URL" class="border p-2 w-full mb-1">
-<input id="category" placeholder="Category" class="border p-2 w-full mb-1">
-<input id="stock" placeholder="Stock" class="border p-2 w-full mb-1">
-<input id="color" placeholder="Color" class="border p-2 w-full mb-1">
-<input id="size" placeholder="Size" class="border p-2 w-full mb-1">
-
-<div class="grid grid-cols-2 gap-2 mt-2">
-<button onclick="startScanner()" class="bg-blue-500 text-white p-2 rounded">📷 Scan</button>
-<button onclick="saveProduct()" class="bg-green-500 text-white p-2 rounded">💾 Save</button>
-<button onclick="clearForm()" class="bg-gray-400 text-white p-2 rounded">Clear</button>
-<button onclick="exportData()" class="bg-purple-500 text-white p-2 rounded">Export</button>
+<div class="flex gap-2 mt-2">
+<button onclick="startScanner()" class="bg-blue-500 text-white px-3 py-2 rounded w-full">📷 Scan</button>
+<button onclick="saveProduct()" class="bg-green-500 text-white px-3 py-2 rounded w-full">💾 Save</button>
 </div>
 
 <div id="scanner" class="mt-2"></div>
@@ -71,95 +72,86 @@ const firebaseConfig = {
 const db = getFirestore(initializeApp(firebaseConfig));
 
 let allOrders = [];
-let allProducts = [];
-let scanner = null;
+let scannerInstance = null;
 
 // ================= LOAD PRODUCTS =================
 window.loadProducts = async () => {
+  const snap = await getDocs(collection(db, "products"));
 
-  const snap = await getDocs(collection(db,"products"));
-  allProducts = snap.docs.map(d => ({id:d.id, ...d.data()}));
-
-  let low = 0;
   let html = "";
 
-  allProducts.forEach(p => {
-
-    if(Number(p.stock) < 5) low++;
+  snap.forEach(d => {
+    let p = d.data();
 
     html += `
-    <div class="bg-white p-2 mb-2 rounded shadow flex justify-between">
+    <div class="bg-white p-2 mb-2 rounded shadow flex justify-between items-center">
 
       <div>
-        <b>${p["Product Name"]}</b>
-        <p class="text-sm">₹${p.Price}</p>
-        <p class="text-xs">Stock: ${p.stock}</p>
+        <p class="font-bold">${p["Product Name"] || "No Name"}</p>
+        <p class="text-sm text-gray-500">₹${p["Price"] || 0}</p>
       </div>
 
-      <div class="flex gap-1">
-        <button onclick='editProduct(${JSON.stringify(p)})' class="bg-yellow-400 px-2">Edit</button>
-        <button onclick="deleteProduct('${p.id}')" class="bg-red-500 text-white px-2">X</button>
-      </div>
+      <button onclick="deleteProduct('${d.id}')"
+      class="bg-red-500 text-white px-2 py-1 rounded text-sm">Delete</button>
 
     </div>`;
   });
 
   document.getElementById("products").innerHTML = html;
-  document.getElementById("lowStock").innerText = low;
 };
 
 // ================= LOAD ORDERS =================
 window.loadOrders = async () => {
 
-  const snap = await getDocs(collection(db,"orders"));
-  allOrders = snap.docs.map(d => ({id:d.id, ...d.data()}));
+  const snap = await getDocs(collection(db, "orders"));
+
+  allOrders = snap.docs.map(d => ({ id: d.id, ...d.data() }));
 
   renderOrders(allOrders);
-  updateStats();
+  updateStats(allOrders);
 };
 
-// ================= STATS =================
-function updateStats(){
-
-  let rev=0,p=0;
-
-  allOrders.forEach(o=>{
-    rev += Number(o.Total||0);
-    if(o.Status=="Pending") p++;
-  });
-
-  document.getElementById("ordersCount").innerText = allOrders.length;
-  document.getElementById("revenue").innerText = "₹"+rev;
-  document.getElementById("pending").innerText = p;
-}
-
-// ================= ORDERS =================
+// ================= RENDER ORDERS =================
 function renderOrders(data){
 
-  let html="";
+  let html = "";
 
-  data.forEach(o=>{
+  data.forEach(o => {
 
-    html+=`
+    html += `
     <div class="bg-white p-2 mb-2 rounded shadow">
 
-      <b>${o["Customer Name"]}</b>
-      <p>${o.Products}</p>
-      <p>₹${o.Total}</p>
+      <b>${o["Customer Name"] || ""}</b>
+      <p class="text-sm">${o["Products"] || ""}</p>
 
-      <select onchange="updateStatus('${o.id}',this.value)">
-        <option ${o.Status=="Pending"?"selected":""}>Pending</option>
-        <option ${o.Status=="Shipped"?"selected":""}>Shipped</option>
-        <option ${o.Status=="Delivered"?"selected":""}>Delivered</option>
+      <p class="font-bold">₹${o["Total"] || 0}</p>
+
+      <p class="text-xs">Status: ${o["Status"]}</p>
+
+      <select onchange="updateStatus('${o.id}', this.value)"
+      class="border p-1 mt-1">
+
+        <option ${o["Status"]=="Pending"?"selected":""}>Pending</option>
+        <option ${o["Status"]=="Shipped"?"selected":""}>Shipped</option>
+        <option ${o["Status"]=="Delivered"?"selected":""}>Delivered</option>
+
       </select>
 
-      <input value="${o["Shipping ID"]||""}" 
-      onchange="updateShip('${o.id}',this.value)" 
-      placeholder="Tracking">
+      <input value="${o["Shipping ID"] || ""}"
+      onchange="updateShip('${o.id}', this.value)"
+      placeholder="Shipping ID"
+      class="border p-1 mt-1 w-full">
 
-      <div class="flex gap-2 mt-1">
-        <button onclick='invoice(${JSON.stringify(o)})' class="bg-purple-500 text-white px-2">PDF</button>
-        <button onclick="deleteOrder('${o.id}')" class="bg-red-500 text-white px-2">Delete</button>
+      <div class="flex gap-2 mt-2">
+
+        ${o["Payment Proof"] ? `<a href="${o["Payment Proof"]}" target="_blank" class="text-blue-500 text-xs">Payment</a>` : ""}
+
+        <button onclick='invoice(${JSON.stringify(o)})'
+        class="bg-purple-500 text-white px-2 py-1 text-xs rounded">Invoice</button>
+
+        <button onclick="deleteOrder('${o.id}')"
+        class="bg-red-500 text-white px-2 py-1 text-xs rounded">Delete</button>
+
       </div>
 
     </div>`;
@@ -168,100 +160,105 @@ function renderOrders(data){
   document.getElementById("orders").innerHTML = html;
 }
 
+// ================= STATS =================
+function updateStats(d){
+
+  document.getElementById("ordersCount").innerText = d.length;
+
+  let rev = 0, p = 0;
+
+  d.forEach(o=>{
+    rev += Number(o["Total"]||0);
+    if(o["Status"]=="Pending") p++;
+  });
+
+  document.getElementById("revenue").innerText = "₹"+rev;
+  document.getElementById("pending").innerText = p;
+}
+
 // ================= SEARCH =================
-search.oninput = (e)=>{
+document.getElementById("search").oninput = (e)=>{
   let v = e.target.value.toLowerCase();
 
-  renderOrders(allOrders.filter(o =>
-    (o["Customer Name"]||"").toLowerCase().includes(v)
-  ));
+  renderOrders(
+    allOrders.filter(o => (o["Customer Name"]||"").toLowerCase().includes(v))
+  );
 };
 
 // ================= SCANNER =================
 window.startScanner = async ()=>{
 
-  if(scanner){
-    await scanner.stop();
-    scanner.clear();
+  if(scannerInstance){
+    await scannerInstance.stop();
+    scannerInstance.clear();
   }
 
-  scanner = new Html5Qrcode("scanner");
+  scannerInstance = new Html5Qrcode("scanner");
 
-  scanner.start({facingMode:"environment"},{fps:10},
+  scannerInstance.start(
+    { facingMode:"environment" },
+    { fps:10 },
 
-  async(code)=>{
+    async(code)=>{
 
-    barcode.value = code;
+      document.getElementById("barcode").value = code;
 
-    try{
-      let res = await fetch("https://api.upcitemdb.com/prod/trial/lookup?upc="+code);
-      let data = await res.json();
+      // 🔥 API FETCH
+      try{
+        const res = await fetch("https://api.upcitemdb.com/prod/trial/lookup?upc="+code);
+        const data = await res.json();
 
-      if(data.items?.length){
-        let p = data.items[0];
-        pname.value = p.title||"";
-        image.value = p.images?.[0]||"";
-        price.value = p.offers?.[0]?.price||"";
+        if(data.items && data.items.length){
+
+          const p = data.items[0];
+
+          document.getElementById("pname").value = p.title || "";
+          document.getElementById("image").value = p.images?.[0] || "";
+          document.getElementById("price").value = p.offers?.[0]?.price || "";
+
+        }
+
+      }catch(e){
+        console.log("API fail");
       }
-    }catch{}
 
-    scanner.stop();
-  });
+      await scannerInstance.stop();
+    }
+  );
 };
 
-// ================= SAVE =================
+// ================= SAVE PRODUCT =================
 window.saveProduct = async ()=>{
 
   if(!barcode.value || !pname.value){
-    alert("Fill required!");
+    alert("Barcode & Name required!");
     return;
   }
 
   await addDoc(collection(db,"products"),{
 
-    Timestamp: new Date().toISOString(),
-    Barcode: barcode.value,
+    "Timestamp": new Date().toISOString(),
+    "Barcode": barcode.value,
     "Product Name": pname.value,
     "Image URL": image.value,
-    Price: Number(price.value||0),
-    category: category.value,
-    stock: stock.value,
-    color: color.value,
-    size: size.value
+    "Price": Number(price.value||0),
+    "category": category.value,
+    "stock": stock.value,
+    "color": color.value,
+    "size": size.value
 
   });
 
-  alert("Saved!");
-  clearForm();
+  alert("Saved ✅");
+
+  document.querySelectorAll("input").forEach(i=>i.value="");
+
   loadProducts();
-};
-
-// ================= EDIT =================
-window.editProduct = (p)=>{
-  barcode.value = p.Barcode;
-  pname.value = p["Product Name"];
-  price.value = p.Price;
-  image.value = p["Image URL"];
-  category.value = p.category;
-  stock.value = p.stock;
-  color.value = p.color;
-  size.value = p.size;
-};
-
-// ================= DELETE =================
-window.deleteProduct = async(id)=>{
-  await deleteDoc(doc(db,"products",id));
-  loadProducts();
-};
-
-window.deleteOrder = async(id)=>{
-  await deleteDoc(doc(db,"orders",id));
-  loadOrders();
 };
 
 // ================= UPDATE =================
 window.updateStatus = async(id,s)=>{
-  await updateDoc(doc(db,"orders",id),{Status:s});
+  await updateDoc(doc(db,"orders",id),{"Status":s});
   loadOrders();
 };
 
@@ -269,38 +266,34 @@ window.updateShip = async(id,s)=>{
   await updateDoc(doc(db,"orders",id),{"Shipping ID":s});
 };
 
-// ================= CLEAR =================
-window.clearForm = ()=>{
-  document.querySelectorAll("input").forEach(i=>i.value="");
+window.deleteOrder = async(id)=>{
+  await deleteDoc(doc(db,"orders",id));
+  loadOrders();
 };
 
-// ================= EXPORT =================
-window.exportData = ()=>{
-  const data = JSON.stringify(allProducts,null,2);
-  const blob = new Blob([data]);
-  const a = document.createElement("a");
-  a.href = URL.createObjectURL(blob);
-  a.download = "products.json";
-  a.click();
+window.deleteProduct = async(id)=>{
+  await deleteDoc(doc(db,"products",id));
+  loadProducts();
 };
 
 // ================= INVOICE =================
 window.invoice = (o)=>{
   const { jsPDF } = window.jspdf;
+
   const doc = new jsPDF();
 
   doc.text("NNCart Invoice",20,20);
-  doc.text("Name: "+o["Customer Name"],20,40);
-  doc.text("Items: "+o.Products,20,50);
-  doc.text("Total: ₹"+o.Total,20,60);
+  doc.text("Customer: "+o["Customer Name"],20,40);
+  doc.text("Product: "+o["Products"],20,50);
+  doc.text("Total: ₹"+o["Total"],20,60);
 
   doc.save("invoice.pdf");
 };
 
 // ================= START =================
 window.onload = ()=>{
-  loadProducts();
   loadOrders();
+  loadProducts();
 };
 
 setInterval(loadOrders,5000);
