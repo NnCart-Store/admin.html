@@ -91,30 +91,28 @@ let allOrders = [];
 // 🔥 SINGLE CAMERA SCANNER (FIXED)
 window.startScanner = async () => {
   try {
-    document.getElementById("scanner").innerHTML = "";
+
+    if (scanner) {
+      try {
+        await scanner.stop();
+        scanner.clear();
+      } catch (e) {}
+    }
+
+    const scannerDiv = document.getElementById("scanner");
+    scannerDiv.innerHTML = "";
+    scannerDiv.style.height = "300px";
+
     scanner = new Html5Qrcode("scanner");
 
     await scanner.start(
       { facingMode: "environment" },
-      { fps: 10, qrbox: 250 },
+      { fps: 8, qrbox: 200 },
 
       async (code) => {
-
         barcode.value = code;
 
-        // 🔥 AUTO FILL FROM FIREBASE
-        const q = query(collection(db, "products"), where("Barcode", "==", code));
-        const snap = await getDocs(q);
-
-        if (!snap.empty) {
-          const p = snap.docs[0].data();
-          pname.value = p["Product Name"] || "";
-          price.value = p["Price"] || "";
-          image.value = p["Image URL"] || "";
-          alert("✅ Data mil gaya!");
-        } else {
-          alert("⚠️ Naya product hai");
-        }
+        alert("✅ Scan Success: " + code);
 
         await scanner.stop();
         scanner.clear();
@@ -122,7 +120,8 @@ window.startScanner = async () => {
     );
 
   } catch (e) {
-    alert("Camera Error: " + e.message);
+    console.log(e);
+    alert("❌ Camera open nahi hua\n\nCheck:\n1. Permission allow\n2. Page reload\n3. Chrome use karo");
   }
 };
 
