@@ -72,46 +72,53 @@
 
     // 🔥 SMART SCANNER (Auto-Fetch Enabled)
     window.startScanner = async () => {
-        const scannerDiv = document.getElementById("scanner");
-        scannerDiv.innerHTML = '<div id="qr-reader" style="width: 100%;"></div>';
-        
-        if (!html5QrCode) {
-            html5QrCode = new Html5Qrcode("qr-reader");
-        }
+    const scannerDiv = document.getElementById("scanner");
+    scannerDiv.innerHTML = '<div id="qr-reader" style="width: 100%;"></div>';
+    const html5QrCode = new Html5Qrcode("qr-reader");
 
-        try {
-            await html5QrCode.start(
-                { facingMode: "environment" },
-                { fps: 10, qrbox: 250 },
-                async (decodedText) => {
-                    document.getElementById("barcode").value = decodedText;
+    try {
+        await html5QrCode.start({ facingMode: "environment" }, { fps: 15, qrbox: 250 }, 
+            async (decodedText) => {
+                // 1. Barcode ko input box mein bharo
+                document.getElementById("barcode").value = decodedText;
+                document.getElementById("pname").value = "🔎 Searching Global Database...";
+                
+                try {
+                    // 🌍 WORLD-WIDE API (Har country ke liye)
+                    const response = await fetch(`https://world.openfoodfacts.org/api/v2/product/${decodedText}.json`);
+                    const result = await response.json();
                     
-                    // --- SMART FETCH START ---
-                    document.getElementById("pname").value = "Searching net...";
-                    try {
-                        const res = await fetch(`https://world.openfoodfacts.org/api/v0/product/${decodedText}.json`);
-                        const data = await res.json();
-                        if (data.status === 1) {
-                            document.getElementById("pname").value = data.product.product_name || "";
-                            document.getElementById("image").value = data.product.image_url || "";
-                            alert("✅ Net se data mil gaya!");
-                        } else {
-                            document.getElementById("pname").value = "";
-                            alert("⚠️ Scan OK, par Net par detail nahi mili.");
-                        }
-                    } catch (e) {
+                    if (result && result.status === 1) {
+                        const p = result.product;
+                        
+                        // International Products ke liye alag-alag languages mein name check karna
+                        const productName = p.product_name || p.product_name_en || p.generic_name || p.product_name_fr || "Branded Item";
+                        
+                        document.getElementById("pname").value = productName;
+                        document.getElementById("image").value = p.image_url || p.image_front_url || "";
+                        document.getElementById("category").value = p.categories ? p.categories.split(',')[0] : "General";
+                        
+                        alert("✅ Global Brand Found: " + productName);
+                    } else {
+                        // Agar Database mein nahi milta
                         document.getElementById("pname").value = "";
+                        alert("⚠️ Barcode Scanned! Par ye product kisi Global Database mein registered nahi hai. Aap manually naam bhar dein.");
                     }
-                    // --- SMART FETCH END ---
-
-                    html5QrCode.stop();
-                    scannerDiv.innerHTML = "";
+                } catch (e) { 
+                    document.getElementById("pname").value = "";
+                    console.error("Fetch Error");
                 }
-            );
-        } catch (err) {
-            alert("❌ Camera Error: " + err);
-        }
-    };
+                
+                // Scanner close logic
+                html5QrCode.stop();
+                scannerDiv.innerHTML = "";
+            }
+        );
+    } catch (err) { 
+        alert("❌ Camera Error! Permissions check karein."); 
+    }
+};
+    
 
     // 🔥 FIXED SAVE PRODUCT LOGIC
     window.saveProduct = async () => {
