@@ -6,24 +6,34 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/html5-qrcode"></script>
 </head>
-<body class="bg-gray-100 p-4">
+<body class="bg-gray-200 p-4">
 
-    <h1 class="text-xl font-bold mb-4">🚀 NnCart Quick Admin</h1>
+    <h1 class="text-xl font-bold mb-4 text-center">NnCart AI Admin</h1>
 
-    <div id="reader" class="rounded-xl overflow-hidden mb-4 bg-black"></div>
-    <button onclick="window.startScan()" class="w-full bg-blue-600 text-white p-3 rounded-lg mb-6 font-bold">📷 SCAN BARCODE</button>
+    <div id="reader" class="rounded-2xl overflow-hidden mb-4 bg-black shadow-lg"></div>
+    <button onclick="window.startScan()" class="w-full bg-blue-600 text-white p-4 rounded-xl font-bold shadow-md">📷 SCAN BARCODE</button>
 
-    <div class="bg-white p-4 rounded-xl shadow-lg space-y-2">
-        <input id="barcode" placeholder="Barcode" class="w-full p-2 border rounded font-mono text-blue-600" readonly>
-        <input id="pname" placeholder="Product Name" class="w-full p-2 border rounded">
-        <div class="flex gap-2">
-            <input id="price" placeholder="Price ₹" type="number" class="w-1/2 p-2 border rounded">
-            <input id="stock" placeholder="Stock" type="number" value="1" class="w-1/2 p-2 border rounded">
+    <div id="popup" class="fixed inset-0 bg-black/80 hidden flex items-center justify-center p-4 z-50">
+        <div class="bg-white w-full max-w-sm rounded-3xl overflow-hidden shadow-2xl">
+            <div class="bg-gray-100 h-48 flex items-center justify-center border-b">
+                <img id="preview-img" src="" class="h-full w-full object-contain p-2" alt="No Photo Found">
+            </div>
+
+            <div class="p-5 space-y-3">
+                <input id="pname" placeholder="Product Name" class="w-full p-2 border-b font-bold outline-none">
+                <div class="flex gap-2">
+                    <input id="price" type="number" placeholder="Set Price ₹" class="w-1/2 p-2 border rounded bg-yellow-50 outline-none">
+                    <input id="stock" type="number" value="1" class="w-1/2 p-2 border rounded outline-none">
+                </div>
+                <input id="category" placeholder="Category" class="w-full p-2 border rounded text-xs outline-none">
+                <input id="barcode" class="w-full p-2 text-[10px] text-gray-400 bg-gray-50 border-none outline-none" readonly>
+                
+                <div class="flex gap-2 mt-4">
+                    <button onclick="document.getElementById('popup').classList.add('hidden')" class="w-1/3 bg-gray-200 p-3 rounded-xl font-bold text-gray-600">Cancel</button>
+                    <button id="saveBtn" onclick="window.saveAll()" class="w-2/3 bg-green-600 text-white p-3 rounded-xl font-bold shadow-lg">✅ Confirm & Save</button>
+                </div>
+            </div>
         </div>
-        <input id="image" placeholder="Image URL" class="w-full p-2 border rounded text-xs">
-        <input id="category" placeholder="Category" class="w-full p-2 border rounded text-xs">
-        
-        <button id="saveBtn" onclick="window.saveAll()" class="w-full bg-green-600 text-white p-4 rounded-xl font-black mt-4 shadow-lg">✅ SAVE TO SHEET & FIREBASE</button>
     </div>
 
 <script type="module">
@@ -45,47 +55,51 @@
     let scanner = new Html5Qrcode("reader");
 
     window.startScan = () => {
-        scanner.start({ facingMode: "environment" }, { fps: 10, qrbox: 250 }, async (txt) => {
+        scanner.start({ facingMode: "environment" }, { fps: 15, qrbox: 250 }, async (txt) => {
             scanner.stop();
             document.getElementById("barcode").value = txt;
-            document.getElementById("pname").value = "🔎 AI Fetching...";
+            document.getElementById("popup").classList.remove("hidden"); // Show Popup
+            document.getElementById("pname").value = "🔎 AI Searching...";
+            document.getElementById("preview-img").src = "https://cdn-icons-png.flaticon.com/512/107/107831.png"; // Loading icon
 
-            // 🌍 AI Auto-Fill Logic (Shoes/Branded ke liye optimized)
             try {
                 const res = await fetch(`https://world.openfoodfacts.org/api/v2/product/${txt}.json`);
                 const data = await res.json();
+                
                 if (data.status === 1) {
                     document.getElementById("pname").value = data.product.product_name || "Branded Item";
-                    document.getElementById("image").value = data.product.image_url || "";
                     document.getElementById("category").value = data.product.categories?.split(',')[0] || "General";
+                    document.getElementById("preview-img").src = data.product.image_url || "";
                 } else {
-                    document.getElementById("pname").value = "Reliance Branded Shoe";
-                    document.getElementById("category").value = "Footwear";
+                    document.getElementById("pname").value = "";
+                    document.getElementById("pname").placeholder = "Naam bharein (Brand nahi mila)";
+                    document.getElementById("preview-img").src = "https://cdn-icons-png.flaticon.com/512/3342/3342137.png"; // Placeholder icon
                 }
-            } catch (e) { document.getElementById("pname").value = "Manual Entry"; }
+            } catch (e) {
+                document.getElementById("pname").value = "Manual Entry";
+            }
         });
     };
 
     window.saveAll = async () => {
         const btn = document.getElementById("saveBtn");
-        btn.disabled = true; btn.innerText = "Saving...";
-
-        const data = {
+        const product = {
             Barcode: document.getElementById("barcode").value,
             Name: document.getElementById("pname").value,
             Price: document.getElementById("price").value || "0",
-            Image: document.getElementById("image").value || "",
-            Category: document.getElementById("category").value || "",
-            Stock: document.getElementById("stock").value || "1"
+            Stock: document.getElementById("stock").value || "1",
+            Image: document.getElementById("preview-img").src,
+            Category: document.getElementById("category").value || ""
         };
 
+        if (!product.Name) { alert("Naam bharna zaroori hai!"); return; }
+        
+        btn.disabled = true; btn.innerText = "Saving...";
+
         try {
-            // 1. Firebase Save
-            await addDoc(collection(db, "products"), data);
-            // 2. Google Sheet Save
-            fetch(`${SHEET_URL}?action=addProduct&${new URLSearchParams(data)}`, { mode: "no-cors" });
-            
-            alert("✅ Dono jagah save ho gaya!");
+            await addDoc(collection(db, "products"), product);
+            fetch(`${SHEET_URL}?action=addProduct&${new URLSearchParams(product)}`, { mode: "no-cors" });
+            alert("✅ Saved Successfully!");
             location.reload();
         } catch (e) { alert("Error!"); btn.disabled = false; }
     };
