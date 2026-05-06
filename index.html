@@ -3,50 +3,68 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>NnCart PRO Admin - Auto Mode</title>
+    <title>NnCart PRO Admin</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/html5-qrcode"></script>
+    <link rel="manifest" href="manifest.json">
 </head>
 
-<body class="bg-gray-900 text-white p-4">
+<body class="bg-gray-100 p-4 pb-20">
 
-<div class="flex justify-between items-center mb-5">
-    <h1 class="text-xl font-bold text-green-400">🚀 NnCart AUTO-BOT</h1>
-    <div id="statusIndicator" class="text-xs bg-gray-800 px-3 py-1 rounded-full text-gray-400">Ready to Scan</div>
+<div class="flex justify-between items-center mb-3">
+    <h1 class="text-xl font-bold">🔥 NnCart PRO Admin</h1>
+    <button onclick="window.startScanner()" class="bg-blue-500 text-white p-3 rounded-full shadow-lg">📷</button>
 </div>
 
-<div class="grid grid-cols-2 gap-3 mb-6">
-    <div class="bg-gray-800 p-4 rounded-lg border border-gray-700">
-        <p class="text-gray-400 text-xs uppercase">Total Products</p>
-        <b id="productsCount" class="text-2xl text-blue-400">0</b>
-    </div>
-    <div class="bg-gray-800 p-4 rounded-lg border border-gray-700">
-        <p class="text-gray-400 text-xs uppercase">Pending Orders</p>
-        <b id="pending" class="text-2xl text-red-400">0</b>
-    </div>
+<div class="grid grid-cols-4 gap-2 mb-3">
+    <div class="bg-white p-2 text-center shadow text-[10px] rounded">Orders<br><b id="ordersCount">0</b></div>
+    <div class="bg-white p-2 text-center shadow text-[10px] rounded">Revenue<br><b id="revenue">₹0</b></div>
+    <div class="bg-white p-2 text-center shadow text-[10px] rounded text-red-500">Pending<br><b id="pending">0</b></div>
+    <div class="bg-white p-2 text-center shadow text-[10px] rounded text-blue-600">Products<br><b id="productsCount">0</b></div>
 </div>
 
-<div class="bg-gray-800 p-2 rounded-2xl shadow-2xl overflow-hidden mb-6 border-2 border-dashed border-gray-600">
-    <div id="scanner" style="width:100%; min-height:300px;"></div>
-    <div id="loadingMsg" class="hidden p-4 text-center animate-pulse text-yellow-400 font-bold">
-        🔄 Fetching & Saving to Database...
-    </div>
-</div>
+<input id="search" placeholder="Search Orders..." class="border p-2 w-full mb-3 rounded-lg outline-none shadow-sm focus:ring-2 ring-blue-400">
 
-<div id="lastProduct" class="bg-gray-800 p-4 rounded-xl hidden border border-green-500">
-    <p class="text-green-500 text-xs font-bold mb-2">✅ LAST SAVED:</p>
-    <div class="flex gap-4">
-        <img id="prevImg" src="" class="w-16 h-16 object-cover rounded bg-white">
-        <div>
-            <h3 id="prevName" class="font-bold text-sm">Product Name</h3>
-            <p id="prevBarcode" class="text-xs text-gray-400"></p>
+<div class="bg-white p-3 rounded-xl shadow-md mb-4 border-t-4 border-blue-500">
+    <h2 class="font-bold mb-2 flex items-center">📦 Add / Scan Product</h2>
+    
+    <div id="scanner-wrapper" class="hidden mb-3 overflow-hidden rounded-lg bg-black border-2 border-blue-300">
+        <div id="qr-reader" style="width:100%;"></div>
+        <button onclick="window.stopScanner()" class="w-full bg-red-500 text-white p-2 text-xs font-bold">CLOSE CAMERA</button>
+    </div>
+
+    <div class="space-y-2">
+        <input id="barcode" placeholder="Barcode ID" class="border p-2 w-full rounded bg-gray-50 font-mono text-blue-600">
+        <input id="pname" placeholder="Product Name (AI Auto-fills)" class="border p-2 w-full rounded">
+        
+        <div class="flex gap-2">
+            <input id="price" placeholder="Price (₹)" type="number" class="border p-2 w-1/2 rounded">
+            <input id="stock" placeholder="Stock" type="number" class="border p-2 w-1/2 rounded">
+        </div>
+        
+        <input id="image" placeholder="Image URL (AI Auto-fills)" class="border p-2 w-full rounded text-xs text-gray-400">
+        
+        <div class="grid grid-cols-3 gap-2">
+            <input id="category" placeholder="Category" class="border p-2 rounded text-xs">
+            <input id="color" placeholder="Color" class="border p-2 rounded text-xs">
+            <input id="size" placeholder="Size" class="border p-2 rounded text-xs">
         </div>
     </div>
+
+    <div class="flex gap-2 mt-4">
+        <button onclick="window.startScanner()" class="bg-blue-500 text-white p-3 w-full rounded-xl font-bold active:scale-95 transition-all shadow-md">SCAN</button>
+        <button id="saveBtn" onclick="window.saveProduct()" class="bg-green-500 text-white p-3 w-full rounded-xl font-bold active:scale-95 transition-all shadow-md">SAVE</button>
+    </div>
+</div>
+
+<h2 class="font-bold text-gray-700 mb-2">Live Orders</h2>
+<div id="orders" class="space-y-2">
+    <p class="text-center text-gray-400 py-4 italic text-xs">Loading orders...</p>
 </div>
 
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.9.0/firebase-app.js";
-    import { getFirestore, collection, addDoc, getDocs } from "https://www.gstatic.com/firebasejs/10.9.0/firebase-firestore.js";
+    import { getFirestore, collection, getDocs, addDoc } from "https://www.gstatic.com/firebasejs/10.9.0/firebase-firestore.js";
 
     const firebaseConfig = {
         apiKey: "AIzaSyCH2di4fAKw8vA80Cv8BMobi-v1p0I", 
@@ -63,89 +81,138 @@
 
     let html5QrCode = null;
 
-    // --- MAIN AUTO-SAVE FUNCTION ---
-    async function autoFetchAndSave(barcode) {
-        document.getElementById("loadingMsg").classList.remove("hidden");
-        document.getElementById("statusIndicator").innerText = "Searching...";
+    // 🔥 FIX: window object ke saath functions jode taaki HTML buttons unhe dhund sakein
+    window.startScanner = async () => {
+        const wrapper = document.getElementById("scanner-wrapper");
+        wrapper.classList.remove("hidden");
+        
+        if (!html5QrCode) {
+            html5QrCode = new Html5Qrcode("qr-reader");
+        }
 
         try {
-            // 1. Internet se data uthana (Multi-Source)
-            let productData = null;
-            
-            // Source: OpenFoodFacts
-            const offRes = await fetch(`https://world.openfoodfacts.org/api/v2/product/${barcode}.json`);
-            const offData = await offRes.json();
+            await html5QrCode.start({ facingMode: "environment" }, { fps: 15, qrbox: 250 }, 
+                async (decodedText) => {
+                    document.getElementById("barcode").value = decodedText;
+                    document.getElementById("pname").value = "🔎 AI Searching...";
+                    
+                    window.stopScanner(); // Scan hote hi camera band
 
-            if (offData.status === 1) {
-                productData = {
-                    Barcode: barcode,
-                    Name: offData.product.product_name || offData.product.product_name_en || "Branded Product",
-                    Image: offData.product.image_url || "",
-                    Category: offData.product.categories?.split(',')[0] || "General",
-                    Price: "0", // Internet APIs usually don't give live retail price
-                    Stock: "1",
-                    Timestamp: new Date().toISOString()
-                };
-            }
-
-            if (productData) {
-                // 2. Firebase Mein Save Karna
-                await addDoc(collection(db, "products"), productData);
-
-                // 3. Google Sheet Mein Save Karna
-                await fetch(`${INVENTORY_URL}?action=addProduct`, {
-                    method: "POST",
-                    mode: "no-cors",
-                    body: JSON.stringify(productData)
-                });
-
-                // UI Update
-                showLastSaved(productData);
-                document.getElementById("statusIndicator").innerText = "Success! Ready Next.";
-            } else {
-                alert("⚠️ Ye product internet par nahi mila!");
-                document.getElementById("statusIndicator").innerText = "Not Found";
-            }
-        } catch (error) {
-            console.error(error);
-            alert("❌ Network Error!");
-        } finally {
-            document.getElementById("loadingMsg").classList.add("hidden");
-            // Scanner ko thoda wait dekar wapas chalu karna taaki lagatar scan na ho
-            setTimeout(() => { startScanner(); }, 2000);
+                    // AI Auto-Fetch Logic
+                    try {
+                        const response = await fetch(`https://world.openfoodfacts.org/api/v2/product/${decodedText}.json`);
+                        const result = await response.json();
+                        
+                        if (result && result.status === 1) {
+                            const p = result.product;
+                            document.getElementById("pname").value = p.product_name || p.product_name_en || "Branded Item";
+                            document.getElementById("image").value = p.image_url || "";
+                            document.getElementById("category").value = p.categories ? p.categories.split(',')[0] : "General";
+                            alert("✅ AI ne product dhund liya!");
+                        } else {
+                            document.getElementById("pname").value = "";
+                            alert("⚠️ Global Brand nahi mila. Details manual bharein.");
+                        }
+                    } catch (e) { 
+                        document.getElementById("pname").value = ""; 
+                    }
+                }
+            );
+        } catch (err) { 
+            alert("❌ Camera Error! Permission dein."); 
         }
-    }
-
-    function showLastSaved(p) {
-        document.getElementById("lastProduct").classList.remove("hidden");
-        document.getElementById("prevName").innerText = p.Name;
-        document.getElementById("prevBarcode").innerText = "Barcode: " + p.Barcode;
-        document.getElementById("prevImg").src = p.Image || "https://via.placeholder.com/100";
-        updateCount();
-    }
-
-    window.startScanner = () => {
-        if (!html5QrCode) html5QrCode = new Html5Qrcode("scanner");
-        
-        html5QrCode.start(
-            { facingMode: "environment" },
-            { fps: 10, qrbox: 250 },
-            async (decodedText) => {
-                await html5QrCode.stop();
-                autoFetchAndSave(decodedText);
-            }
-        ).catch(err => console.log(err));
     };
 
-    async function updateCount() {
-        const snap = await getDocs(collection(db, "products"));
-        document.getElementById("productsCount").innerText = snap.size;
-    }
+    window.stopScanner = () => {
+        if (html5QrCode) {
+            html5QrCode.stop().then(() => {
+                document.getElementById("scanner-wrapper").classList.add("hidden");
+            }).catch(err => console.log("Stop error"));
+        }
+    };
 
-    // Launch scanner on load
-    startScanner();
-    updateCount();
+    window.saveProduct = async () => {
+        const barcodeVal = document.getElementById("barcode").value;
+        const nameVal = document.getElementById("pname").value;
+
+        if (!barcodeVal || !nameVal) { 
+            alert("❌ Barcode aur Name zaroori hai!"); 
+            return; 
+        }
+
+        const btn = document.getElementById("saveBtn");
+        btn.disabled = true;
+        btn.innerText = "Saving...";
+        
+        const product = {
+            Barcode: barcodeVal,
+            Name: nameVal,
+            Price: document.getElementById("price").value || "0",
+            Image: document.getElementById("image").value || "",
+            Category: document.getElementById("category").value || "",
+            Stock: document.getElementById("stock").value || "0",
+            Color: document.getElementById("color").value || "",
+            Size: document.getElementById("size").value || "",
+            Timestamp: new Date().toISOString()
+        };
+
+        try {
+            // 1. Firebase Save
+            await addDoc(collection(db, "products"), product);
+
+            // 2. Google Sheet Save (URL ke query params mein data bhej rahe hain)
+            const params = new URLSearchParams(product).toString();
+            await fetch(INVENTORY_URL + "?action=addProduct&" + params, {
+                method: "GET", // Apps Script GET request handle karna aasaan hota hai
+                mode: "no-cors"
+            });
+
+            alert("✅ Saved Successfully!");
+            location.reload(); 
+        } catch (e) {
+            alert("❌ Error: " + e.message);
+            btn.disabled = false;
+            btn.innerText = "Save";
+        }
+    };
+
+    window.loadOrders = async () => {
+        try {
+            const response = await fetch(INVENTORY_URL + "?action=getOrders");
+            const data = await response.json();
+            let orders = data.orders || []; 
+            let ordersHTML = "";
+            let packedCount = 0;
+
+            orders.forEach(order => {
+                let worker = order.Staff_ID || "Not Assigned";
+                let status = order.Packing_Status || "Pending";
+                if(status === "Packed") packedCount++;
+                let statusColor = status === "Packed" ? "text-green-600" : "text-red-500";
+
+                ordersHTML += `
+                    <div class="bg-white p-3 rounded-xl shadow-sm border-l-4 ${status === 'Packed' ? 'border-green-500' : 'border-red-400'} flex justify-between items-center">
+                        <div>
+                            <p class="text-xs font-black">ID: #${order.OrderID}</p>
+                            <p class="text-[10px] text-gray-500 font-bold">Worker: ${worker}</p>
+                        </div>
+                        <span class="text-[10px] font-black ${statusColor}">${status.toUpperCase()}</span>
+                    </div>`;
+            });
+            document.getElementById('orders').innerHTML = ordersHTML || '<p class="text-center text-xs py-4 text-gray-400">No Orders Found</p>';
+            document.getElementById('ordersCount').innerText = orders.length;
+            document.getElementById('pending').innerText = orders.length - packedCount;
+        } catch (e) { 
+            console.log("Load error"); 
+        }
+    };
+
+    // Initial Load
+    const snap = await getDocs(collection(db, "products"));
+    document.getElementById("productsCount").innerText = snap.size;
+    
+    window.loadOrders();
+    setInterval(window.loadOrders, 30000); // 30 sec auto-update
 </script>
-
 </body>
 </html>
