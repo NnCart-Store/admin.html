@@ -3,58 +3,51 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>NnCart PRO Admin</title>
+    <title>NnCart PRO Admin - Auto Mode</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/html5-qrcode"></script>
-    <link rel="manifest" href="manifest.json">
 </head>
 
-<body class="bg-gray-100 p-4">
+<body class="bg-gray-900 text-white p-4">
 
-<div class="flex justify-between items-center mb-3">
-    <h1 class="text-xl font-bold">🔥 NnCart PRO Admin</h1>
-    <button onclick="startScanner()" class="bg-blue-500 text-white p-3 rounded-full">📷</button>
+<div class="flex justify-between items-center mb-5">
+    <h1 class="text-xl font-bold text-green-400">🚀 NnCart AUTO-BOT</h1>
+    <div id="statusIndicator" class="text-xs bg-gray-800 px-3 py-1 rounded-full text-gray-400">Ready to Scan</div>
 </div>
 
-<div class="grid grid-cols-4 gap-2 mb-3">
-    <div class="bg-white p-2 text-center shadow text-xs">Orders<br><b id="ordersCount">0</b></div>
-    <div class="bg-white p-2 text-center shadow text-xs">Revenue<br><b id="revenue">₹0</b></div>
-    <div class="bg-white p-2 text-center shadow text-xs">Pending<br><b id="pending">0</b></div>
-    <div class="bg-white p-2 text-center shadow text-xs">Products<br><b id="productsCount">0</b></div>
-</div>
-
-<input id="search" placeholder="Search Orders..." class="border p-2 w-full mb-3">
-
-<div class="bg-white p-3 rounded shadow mb-4">
-    <h2 class="font-bold mb-2">📦 Add / Scan Product</h2>
-    <input id="barcode" placeholder="Barcode" class="border p-2 w-full mb-1">
-    <input id="pname" placeholder="Product Name" class="border p-2 w-full mb-1">
-    <input id="price" placeholder="Price" class="border p-2 w-full mb-1">
-    <input id="image" placeholder="Image URL" class="border p-2 w-full mb-1">
-    <input id="category" placeholder="Category" class="border p-2 w-full mb-1">
-    <input id="stock" placeholder="Stock" class="border p-2 w-full mb-1">
-    <input id="color" placeholder="Color" class="border p-2 w-full mb-1">
-    <input id="size" placeholder="Size" class="border p-2 w-full mb-1">
-
-    <div class="flex gap-2 mt-2">
-        <button onclick="startScanner()" class="bg-blue-500 text-white p-2 w-full">Scan</button>
-        <button id="saveBtn" onclick="saveProduct()" class="bg-green-500 text-white p-2 w-full">Save</button>
+<div class="grid grid-cols-2 gap-3 mb-6">
+    <div class="bg-gray-800 p-4 rounded-lg border border-gray-700">
+        <p class="text-gray-400 text-xs uppercase">Total Products</p>
+        <b id="productsCount" class="text-2xl text-blue-400">0</b>
     </div>
-
-    <div id="scanner" style="width:100%; min-height:0px; margin-top:10px;"></div>
+    <div class="bg-gray-800 p-4 rounded-lg border border-gray-700">
+        <p class="text-gray-400 text-xs uppercase">Pending Orders</p>
+        <b id="pending" class="text-2xl text-red-400">0</b>
+    </div>
 </div>
 
-<h2 class="font-bold">Products</h2>
-<div id="products" class="mb-4"></div>
+<div class="bg-gray-800 p-2 rounded-2xl shadow-2xl overflow-hidden mb-6 border-2 border-dashed border-gray-600">
+    <div id="scanner" style="width:100%; min-height:300px;"></div>
+    <div id="loadingMsg" class="hidden p-4 text-center animate-pulse text-yellow-400 font-bold">
+        🔄 Fetching & Saving to Database...
+    </div>
+</div>
 
-<h2 class="font-bold mt-4">Orders</h2>
-<div id="orders"></div>
+<div id="lastProduct" class="bg-gray-800 p-4 rounded-xl hidden border border-green-500">
+    <p class="text-green-500 text-xs font-bold mb-2">✅ LAST SAVED:</p>
+    <div class="flex gap-4">
+        <img id="prevImg" src="" class="w-16 h-16 object-cover rounded bg-white">
+        <div>
+            <h3 id="prevName" class="font-bold text-sm">Product Name</h3>
+            <p id="prevBarcode" class="text-xs text-gray-400"></p>
+        </div>
+    </div>
+</div>
 
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.9.0/firebase-app.js";
-    import { getFirestore, collection, getDocs, addDoc } from "https://www.gstatic.com/firebasejs/10.9.0/firebase-firestore.js";
+    import { getFirestore, collection, addDoc, getDocs } from "https://www.gstatic.com/firebasejs/10.9.0/firebase-firestore.js";
 
-    // Firebase Configuration
     const firebaseConfig = {
         apiKey: "AIzaSyCH2di4fAKw8vA80Cv8BMobi-v1p0I", 
         authDomain: "nncart.firebaseapp.com",
@@ -70,167 +63,89 @@
 
     let html5QrCode = null;
 
-    // --- 1. GLOBAL SEARCH FUNCTION (Multi-Source) ---
-    async function fetchProductData(barcode) {
-        // Source 1: OpenFoodFacts
+    // --- MAIN AUTO-SAVE FUNCTION ---
+    async function autoFetchAndSave(barcode) {
+        document.getElementById("loadingMsg").classList.remove("hidden");
+        document.getElementById("statusIndicator").innerText = "Searching...";
+
         try {
-            let res1 = await fetch(`https://world.openfoodfacts.org/api/v2/product/${barcode}.json`);
-            let data1 = await res1.json();
-            if (data1.status === 1) {
-                let p = data1.product;
-                return {
-                    name: p.product_name || p.product_name_en || p.generic_name || "Branded Item",
-                    image: p.image_url || p.image_front_url || "",
-                    category: p.categories ? p.categories.split(',')[0] : "General"
+            // 1. Internet se data uthana (Multi-Source)
+            let productData = null;
+            
+            // Source: OpenFoodFacts
+            const offRes = await fetch(`https://world.openfoodfacts.org/api/v2/product/${barcode}.json`);
+            const offData = await offRes.json();
+
+            if (offData.status === 1) {
+                productData = {
+                    Barcode: barcode,
+                    Name: offData.product.product_name || offData.product.product_name_en || "Branded Product",
+                    Image: offData.product.image_url || "",
+                    Category: offData.product.categories?.split(',')[0] || "General",
+                    Price: "0", // Internet APIs usually don't give live retail price
+                    Stock: "1",
+                    Timestamp: new Date().toISOString()
                 };
             }
-        } catch(e) { console.log("OFF Fetch Error"); }
 
-        // Source 2: UPCitemdb (Backup)
-        try {
-            let res2 = await fetch(`https://api.upcitemdb.com/prod/trial/lookup?upc=${barcode}`);
-            let data2 = await res2.json();
-            if (data2.items && data2.items.length > 0) {
-                let item = data2.items[0];
-                return {
-                    name: item.title,
-                    image: item.images ? item.images[0] : "",
-                    category: item.category || "General"
-                };
+            if (productData) {
+                // 2. Firebase Mein Save Karna
+                await addDoc(collection(db, "products"), productData);
+
+                // 3. Google Sheet Mein Save Karna
+                await fetch(`${INVENTORY_URL}?action=addProduct`, {
+                    method: "POST",
+                    mode: "no-cors",
+                    body: JSON.stringify(productData)
+                });
+
+                // UI Update
+                showLastSaved(productData);
+                document.getElementById("statusIndicator").innerText = "Success! Ready Next.";
+            } else {
+                alert("⚠️ Ye product internet par nahi mila!");
+                document.getElementById("statusIndicator").innerText = "Not Found";
             }
-        } catch(e) { console.log("UPC Fetch Error"); }
-
-        return null;
+        } catch (error) {
+            console.error(error);
+            alert("❌ Network Error!");
+        } finally {
+            document.getElementById("loadingMsg").classList.add("hidden");
+            // Scanner ko thoda wait dekar wapas chalu karna taaki lagatar scan na ho
+            setTimeout(() => { startScanner(); }, 2000);
+        }
     }
 
-    // --- 2. SCANNER LOGIC ---
-    window.startScanner = async () => {
-        const scannerDiv = document.getElementById("scanner");
-        scannerDiv.innerHTML = '<div id="qr-reader" style="width:100%"></div>';
+    function showLastSaved(p) {
+        document.getElementById("lastProduct").classList.remove("hidden");
+        document.getElementById("prevName").innerText = p.Name;
+        document.getElementById("prevBarcode").innerText = "Barcode: " + p.Barcode;
+        document.getElementById("prevImg").src = p.Image || "https://via.placeholder.com/100";
+        updateCount();
+    }
+
+    window.startScanner = () => {
+        if (!html5QrCode) html5QrCode = new Html5Qrcode("scanner");
         
-        if (html5QrCode) {
-            try { await html5QrCode.stop(); } catch(e){}
-        }
-
-        html5QrCode = new Html5Qrcode("qr-reader");
-
-        try {
-            await html5QrCode.start(
-                { facingMode: "environment" },
-                { fps: 15, qrbox: 250 },
-                async (decodedText) => {
-                    document.getElementById("barcode").value = decodedText;
-                    document.getElementById("pname").value = "🔎 Searching Global Database...";
-
-                    let data = await fetchProductData(decodedText);
-
-                    if (data) {
-                        document.getElementById("pname").value = data.name;
-                        document.getElementById("image").value = data.image;
-                        document.getElementById("category").value = data.category;
-                        alert("✅ Product Found: " + data.name);
-                    } else {
-                        document.getElementById("pname").value = "";
-                        alert("⚠️ Barcode Scanned! Database mein nahi mila, kripya manual fill karein.");
-                    }
-
-                    await html5QrCode.stop();
-                    scannerDiv.innerHTML = "";
-                }
-            );
-        } catch (err) {
-            alert("❌ Camera Error / Permission issue");
-        }
+        html5QrCode.start(
+            { facingMode: "environment" },
+            { fps: 10, qrbox: 250 },
+            async (decodedText) => {
+                await html5QrCode.stop();
+                autoFetchAndSave(decodedText);
+            }
+        ).catch(err => console.log(err));
     };
 
-    // --- 3. SAVE PRODUCT LOGIC ---
-    window.saveProduct = async () => {
-        const barcodeVal = document.getElementById("barcode").value;
-        const nameVal = document.getElementById("pname").value;
+    async function updateCount() {
+        const snap = await getDocs(collection(db, "products"));
+        document.getElementById("productsCount").innerText = snap.size;
+    }
 
-        if (!barcodeVal || !nameVal) { 
-            alert("❌ Barcode aur Name zaroori hai!"); 
-            return; 
-        }
-
-        const btn = document.getElementById("saveBtn");
-        btn.disabled = true;
-        btn.innerText = "Saving...";
-        
-        const product = {
-            Barcode: barcodeVal,
-            Name: nameVal,
-            Price: document.getElementById("price").value || "0",
-            Image: document.getElementById("image").value || "",
-            Category: document.getElementById("category").value || "",
-            Stock: document.getElementById("stock").value || "0",
-            Color: document.getElementById("color").value || "",
-            Size: document.getElementById("size").value || ""
-        };
-
-        try {
-            // Firebase Save
-            await addDoc(collection(db, "products"), product);
-
-            // Google Sheet Save (no-cors used for Apps Script)
-            await fetch(INVENTORY_URL + "?action=addProduct", {
-                method: "POST",
-                mode: "no-cors",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(product)
-            });
-
-            alert("✅ Firebase aur Google Sheet dono mein save ho gaya!");
-            location.reload(); 
-        } catch (e) {
-            alert("❌ Error: " + e.message);
-            btn.disabled = false;
-            btn.innerText = "Save";
-        }
-    };
-
-    // --- 4. LOAD DATA (Orders & Products) ---
-    window.loadProducts = async () => {
-        try {
-            const snap = await getDocs(collection(db, "products"));
-            document.getElementById("productsCount").innerText = snap.size;
-        } catch (e) { console.log("Product Load error"); }
-    };
-
-    window.loadOrders = async () => {
-        try {
-            const response = await fetch(INVENTORY_URL + "?action=getOrders");
-            const data = await response.json();
-            let orders = data.orders || []; 
-            let staffListHTML = "";
-            let packedCount = 0;
-
-            orders.forEach(order => {
-                let worker = order.Staff_ID || "Not Assigned";
-                let status = order.Packing_Status || "Pending";
-                if(status === "Packed") packedCount++;
-                let statusColor = status === "Packed" ? "text-green-600" : "text-red-500";
-
-                staffListHTML += `
-                    <div class="border-b p-2 bg-gray-50 mb-1 rounded flex justify-between items-center">
-                        <div>
-                            <p class="text-xs font-bold text-gray-700">Order: #${order.OrderID || 'N/A'}</p>
-                            <p class="text-[10px] text-blue-500 font-bold">Packed By: ${worker}</p>
-                        </div>
-                        <span class="text-[10px] font-bold ${statusColor}">${status.toUpperCase()}</span>
-                    </div>`;
-            });
-            document.getElementById('orders').innerHTML = staffListHTML;
-            document.getElementById('ordersCount').innerText = orders.length;
-            document.getElementById('pending').innerText = orders.length - packedCount;
-        } catch (e) { console.log("Order Load error"); }
-    };
-
-    // Initial Load
-    loadProducts();
-    loadOrders();
-    setInterval(loadOrders, 20000); // Auto-update every 20 seconds
-
+    // Launch scanner on load
+    startScanner();
+    updateCount();
 </script>
+
 </body>
 </html>
