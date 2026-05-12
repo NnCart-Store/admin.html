@@ -1,301 +1,196 @@
-<!DOCTYPE html>
-<html lang="hi">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<link rel="manifest" href="manifest.json">
-<meta name="theme-color" content="#FF972E">
-<title>NnCart Full</title>
-<script src="https://cdn.tailwindcss.com"></script>
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-<style>
-img { background:#eee; min-height: 100px; }
-.product-card:active { transform: scale(0.98); }
-.no-scrollbar::-webkit-scrollbar { display: none; }
-.no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
-.line-clamp-2 { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
-#quickOrderBox { transition: all 0.3s ease; }
-</style>
-</head>
-<body class="bg-gray-100 pb-20">
 
-<header class="bg-[#003399] text-white p-4 sticky top-0 z-50 flex justify-between items-center shadow-md">
-  <div class="flex flex-col" onclick="location.reload()">
-      <h1 class="text-2xl font-black italic tracking-tighter leading-none">NnCart</h1>
-      <p class="text-[8px] italic font-medium opacity-90">Sab Kuch... Yahin Se!</p>
-  </div>
-  <div class="flex items-center gap-4">
-    <i class="fa-solid fa-magnifying-glass text-lg cursor-pointer" onclick="document.getElementById('search').focus()"></i>
-    <div class="relative cursor-pointer" onclick="toggleCart()">
-      <i class="fa-solid fa-cart-shopping text-2xl"></i>
-      <span id="cartCount" class="absolute -top-2 -right-2 bg-orange-600 text-white text-[10px] px-1.5 py-0.5 rounded-full font-bold border-2 border-[#003399]">0</span>
-    </div>
-  </div>
-</header>
 
-<div class="bg-[#003399] p-3 pb-8 rounded-b-[30px] shadow-lg">
-    <div class="relative flex items-center">
-        <i class="fa-solid fa-magnifying-glass absolute left-4 text-gray-400"></i>
-        <input id="search" oninput="searchProduct()" placeholder="Search for products..." class="w-full p-3 pl-12 rounded-xl outline-none text-sm text-gray-700 shadow-inner">
-        <i class="fa-solid fa-microphone absolute right-4 text-[#003399]"></i>
-    </div>
+<!DOCTYPE html>  <html lang="hi">  
+<head>  
+    <meta charset="UTF-8">  
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">  
+    <title>NnCart Admin</title>  
+    <script src="https://cdn.tailwindcss.com"></script>  
+    <script src="https://unpkg.com/html5-qrcode"></script>  
+    <link rel="manifest" href="manifest.json">  
+</head>  <body class="bg-gray-100 p-4">  <div class="flex justify-between items-center mb-3">  
+    <h1 class="text-xl font-bold text-blue-600">🔥 NnCart Admin</h1>  
+    <button onclick="startScanner()" class="bg-blue-500 text-white p-3 rounded-full shadow-lg">📷</button>  
+</div>  <!-- Dashboard Stats -->  <div class="grid grid-cols-4 gap-2 mb-3">  
+    <div class="bg-white p-2 text-center shadow rounded-lg text-[10px]">Orders<br><b id="ordersCount" class="text-sm">0</b></div>  
+    <div class="bg-white p-2 text-center shadow rounded-lg text-[10px]">Revenue<br><b id="revenue" class="text-sm">₹0</b></div>  
+    <div class="bg-white p-2 text-center shadow rounded-lg text-[10px] text-red-500">Pending<br><b id="pending" class="text-sm">0</b></div>  
+    <div class="bg-white p-2 text-center shadow rounded-lg text-[10px] text-blue-500">Products<br><b id="productsCount" class="text-sm">0</b></div>  
+</div>  <input id="search" placeholder="Search Orders..." class="border p-2 w-full mb-3 rounded-lg shadow-sm">  <!-- Add Product Section -->  <div class="bg-white p-3 rounded-xl shadow-md mb-4 border-t-4 border-green-500">  
+    <h2 class="font-bold mb-2 flex items-center gap-2">📦 Inventory Manager</h2>  
+    <div class="grid grid-cols-2 gap-2">  
+        <input id="barcode" placeholder="Barcode" class="border p-2 rounded text-sm font-mono bg-gray-50">  
+        <input id="category" placeholder="Category" class="border p-2 rounded text-sm">  
+    </div>  
+    <input id="pname" placeholder="Product Name" class="border p-2 w-full mt-2 rounded text-sm">  
+    <div class="grid grid-cols-3 gap-2 mt-2">  
+        <input id="price" placeholder="Price" type="number" class="border p-2 rounded text-sm">  
+        <input id="stock" placeholder="Stock" type="number" class="border p-2 rounded text-sm">  
+        <input id="size" placeholder="Size" class="border p-2 rounded text-sm">  
+    </div>  
+    <input id="image" placeholder="Image Direct Link (Postimg)" class="border p-2 w-full mt-2 rounded text-sm">  
+    <input id="color" placeholder="Color" class="border p-2 w-full mt-2 rounded text-sm">  <div class="flex gap-2 mt-4">  
+    <button onclick="startScanner()" class="bg-blue-600 text-white p-2 w-full rounded-lg font-bold">SCAN</button>  
+    <button id="saveBtn" onclick="saveProduct()" class="bg-green-600 text-white p-2 w-full rounded-lg font-bold">SAVE BOTH</button>  
+</div>  
+
+<div id="scanner-wrapper" class="hidden mt-3 rounded-lg overflow-hidden border-2 border-blue-500">  
+    <div id="scanner" style="width:100%;"></div>  
+    <button onclick="stopScanner()" class="w-full bg-red-500 text-white p-2 text-xs">CANCEL SCAN</button>  
 </div>
 
-<div class="px-3 -mt-5 mb-2">
-    <div class="w-full bg-gradient-to-r from-orange-500 via-red-600 to-pink-600 rounded-2xl shadow-xl overflow-hidden relative border-2 border-white">
-        <div class="p-4 flex justify-between items-center relative z-10">
-            <div>
-                <h3 class="text-white text-[10px] font-bold tracking-widest uppercase opacity-90">Special Offer</h3>
-                <p class="text-white text-2xl font-black italic leading-tight">PRIMEUM BIG SALE <br> <span class="text-yellow-300">LIVE NOW</span></p>
-                <div class="mt-2 inline-block bg-white text-red-600 text-[12px] px-4 py-1 rounded-full font-black shadow-lg animate-bounce">
-                    UP TO 55% OFF
-                </div>
-            </div>
-            <div class="bg-white/20 p-3 rounded-full backdrop-blur-sm">
-                <i class="fa-solid fa-bolt-lightning text-yellow-300 text-4xl animate-pulse"></i>
-            </div>
-        </div>
-    </div>
-</div>
-
-<div class="flex gap-4 overflow-x-auto no-scrollbar p-4 bg-white">
-    <div onclick="filterByCategory('Saree')" class="flex flex-col items-center min-w-[70px]">
-        <div class="w-16 h-16 rounded-full overflow-hidden border-2 border-gray-100 shadow-sm">
-            <img src="https://m.media-amazon.com/images/I/71z3uD+6clL._AC_UY1100_.jpg" class="w-full h-full object-cover">
-        </div>
-        <span class="text-[11px] font-bold mt-1 text-gray-700">Shari</span>
-    </div>
-    <div onclick="filterByCategory('Kurti')" class="flex flex-col items-center min-w-[70px]">
-        <div class="w-16 h-16 rounded-full overflow-hidden border-2 border-gray-100 shadow-sm">
-            <img src="https://m.media-amazon.com/images/I/61vI80lYv+L._AC_UY1100_.jpg" class="w-full h-full object-cover">
-        </div>
-        <span class="text-[11px] font-bold mt-1 text-gray-700">Kurti</span>
-    </div>
-    <div onclick="filterByCategory('Jeans')" class="flex flex-col items-center min-w-[70px]">
-        <div class="w-16 h-16 rounded-full overflow-hidden border-2 border-gray-100 shadow-sm">
-            <img src="https://5.imimg.com/data5/ANDROID/Default/2021/1/WA/TC/ZZ/27725946/product-500x500.jpg" class="w-full h-full object-cover">
-        </div>
-        <span class="text-[11px] font-bold mt-1 text-gray-700">Jeans</span>
-    </div>
-    <div onclick="filterByCategory('Shirt')" class="flex flex-col items-center min-w-[70px]">
-        <div class="w-16 h-16 rounded-full overflow-hidden border-2 border-gray-100 shadow-sm">
-            <img src="https://m.media-amazon.com/images/I/71S9O6Ojc6L._AC_UY1100_.jpg" class="w-full h-full object-cover">
-        </div>
-        <span class="text-[11px] font-bold mt-1 text-gray-700">Shirt</span>
-    </div>
-</div>
-
-<div id="products" class="grid grid-cols-2 gap-3 p-3"></div>
-
-<div id="orderBox" class="hidden fixed inset-0 bg-black/50 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
-    <div class="bg-white w-full max-w-sm rounded-3xl p-6 shadow-2xl overflow-y-auto max-h-[90vh]">
-        <h2 class="text-xl font-black mb-2 text-red-600 border-b pb-2">Your Cart</h2>
-        <div id="cartItems" class="space-y-2 mb-4"></div>
-        <div class="border-t pt-2 mb-4">
-            <p class="flex justify-between font-bold">Total: <span id="total">0</span></p>
-        </div>
-        <div class="space-y-3">
-            <input id="cName" placeholder="आपका नाम" class="w-full p-3 bg-gray-50 border rounded-xl outline-none">
-            <input id="mobile" placeholder="मोबाइल नंबर" class="w-full p-3 bg-gray-50 border rounded-xl outline-none">
-            <textarea id="address" placeholder="पूरा पता" class="w-full p-3 bg-gray-50 border rounded-xl outline-none h-20"></textarea>
-        </div>
-        <div class="flex gap-2 mt-6">
-            <button onclick="document.getElementById('orderBox').classList.add('hidden')" class="flex-1 py-3 font-bold text-gray-500">Close</button>
-            <button onclick="submitOrder()" class="flex-1 py-3 bg-blue-600 text-white font-bold rounded-xl shadow-lg">Place Order</button>
-        </div>
-    </div>
-</div>
-
-<div id="quickOrderBox" class="hidden fixed inset-0 bg-black/50 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
-    <div class="bg-white w-full max-w-sm rounded-3xl p-6 shadow-2xl overflow-y-auto max-h-[90vh]">
-        <h2 class="text-xl font-black mb-2 text-red-600 border-b pb-2 italic uppercase">Quick Order</h2>
-        <p id="selectedItemName" class="font-bold text-gray-700 mb-4 bg-gray-100 p-2 rounded-lg text-sm"></p>
-        <div class="space-y-3">
-            <input id="qName" placeholder="आपका नाम" class="w-full p-3 bg-gray-50 border rounded-xl outline-none">
-            <input id="qMobile" placeholder="मोबाइल नंबर" class="w-full p-3 bg-gray-50 border rounded-xl outline-none">
-            <div class="grid grid-cols-2 gap-2">
-                <input id="qSize" placeholder="Size (L, XL)" class="p-3 bg-gray-50 border rounded-xl outline-none">
-                <input id="qColor" placeholder="Color" class="p-3 bg-gray-50 border rounded-xl outline-none">
-            </div>
-            <textarea id="qAddress" placeholder="पूरा पता (Full Address)" class="w-full p-3 bg-gray-50 border rounded-xl outline-none h-20"></textarea>
-        </div>
-        <div class="flex gap-2 mt-6">
-            <button onclick="closeQuickOrder()" class="flex-1 py-3 font-bold text-gray-400">CANCEL</button>
-            <button onclick="confirmQuickOrder()" class="flex-1 py-3 bg-green-600 text-white font-bold rounded-xl shadow-lg border-b-4 border-green-800">CONFIRM ✅</button>
-        </div>
-    </div>
-</div>
-
-<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
-<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
-
-<script>
-const firebaseConfig = {  
-  apiKey: "YOUR_API_KEY",  
-  authDomain: "nncart.firebaseapp.com",  
-  projectId: "nncart"  
-};  
-firebase.initializeApp(firebaseConfig);  
-const db = firebase.firestore();  
-const SHEET_URL = "https://script.google.com/macros/s/AKfycbwQTRONnq_uDtFnXArJva1kvqn6sK_OFsU9hgULXUCcOlxC7P13l_YM9k0vsdxXj9wm/exec";  
+</div>  <!-- Inventory Display List -->  <h2 class="font-bold mb-2 text-gray-700 flex justify-between items-center">  
+    Current Inventory   
+    <span class="text-[10px] font-normal text-gray-400">Showing last entries</span>  
+</h2>  
+<div id="products" class="space-y-2 mb-6">  
+    <p class="text-center text-gray-400 py-4 text-sm italic">Loading products list...</p>  
+</div>  <h2 class="font-bold mt-4 mb-2 text-gray-700">Recent Orders</h2>  
+<div id="orders" class="space-y-2"></div>  <script type="module">  
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.9.0/firebase-app.js";  
+    import { getFirestore, collection, getDocs, addDoc } from "https://www.gstatic.com/firebasejs/10.9.0/firebase-firestore.js";  
   
-let allProducts = [];  
-let cart = [];  
-let currentQuickItem = null;  
-
-// 🔥 FIXED: Loads from both and merges by Barcode to avoid duplicates
-async function loadProducts() {  
-  try {  
-    let combinedData = {};
-
-    // 1. Fetch from Google Sheet
-    try {
-        const sheetRes = await fetch(SHEET_URL + "?action=getInventory");
-        const sheetItems = await sheetRes.json();
-        sheetItems.forEach(item => { combinedData[item.Barcode] = item; });
-    } catch(e) { console.log("Sheet empty or error"); }
-
-    // 2. Fetch from Firebase
-    try {
-        const snap = await db.collection("products").get();
-        snap.forEach(doc => {
-            const data = doc.data();
-            if(!combinedData[data.Barcode]) { combinedData[data.Barcode] = data; }
-        });
-    } catch(e) { console.log("Firebase empty or error"); }
-
-    allProducts = Object.values(combinedData);
-    renderProducts(allProducts);
-  } catch(e) { alert("❌ Load Error"); }  
-}  
-  
-function renderProducts(list) {  
-    let html = "";   
-    const container = document.getElementById("products");  
-    list.forEach(p => {  
-        const imgUrl = p.Image || p.image || p["Image URL"] || 'https://via.placeholder.com/150';  
-        const pName = p.Name || p["Product Name"] || "No Name";  
-        const price = p.Price || 0;  
-        const mrp = p.MRP || (Number(price) + 100);  
-
-        html += `  
-        <div class="bg-white p-2 rounded-2xl shadow-md flex flex-col border border-gray-100">  
-            <img src="${imgUrl}" class="h-28 w-full object-cover rounded-xl" onerror="this.src='https://via.placeholder.com/150?text=No+Image'">  
-            <div class="flex text-[#FFD700] text-[8px] mt-1">  
-                <i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star-half-stroke"></i>  
-            </div>  
-            <h3 class="text-[11px] font-bold mt-1 truncate">${pName}</h3>  
-            <div class="flex gap-2 items-center">  
-                <p class="text-red-600 font-black text-sm">₹${price}</p>  
-                <p class="text-gray-400 line-through text-[10px]">₹${mrp}</p>  
-            </div>  
-            <div class="grid grid-cols-2 gap-1 mt-2">  
-                <button onclick='addToCart(${JSON.stringify(p)})' class="bg-gray-100 text-black text-[10px] p-2 rounded-lg font-bold shadow-sm">+ Cart</button>  
-                <button onclick='openQuickOrder(${JSON.stringify(p)})' class="bg-[#FFD700] text-black text-[10px] p-2 rounded-lg font-bold shadow-sm">BUY NOW</button>  
-            </div>  
-        </div>`;  
-    });  
-    container.innerHTML = html;  
-}  
-  
-function searchProduct() {  
-  const v = document.getElementById("search").value.toLowerCase();  
-  const filtered = allProducts.filter(p => (p["Product Name"] || p.Name || "").toLowerCase().includes(v));  
-  renderProducts(filtered);  
-}  
-  
-function filterByCategory(cat) {  
-  const filtered = allProducts.filter(p => (p.Category || "").toLowerCase() === cat.toLowerCase());  
-  renderProducts(filtered);  
-}  
-  
-function toggleCart() { document.getElementById("orderBox").classList.toggle("hidden"); }  
-  
-function addToCart(p) {  
-  const name = p["Product Name"] || p.Name;  
-  const found = cart.find(i => (i["Product Name"] || i.Name) === name);  
-  if(found){ found.qty += 1; } else { p.qty = 1; cart.push(p); }  
-  updateCartUI();  
-}  
-  
-function updateCartUI() {  
-  document.getElementById("cartCount").innerText = cart.length;  
-  let h = ""; let total = 0;  
-  cart.forEach((item, index) => {  
-      h += `<div class="flex justify-between text-sm">${item["Product Name"] || item.Name} x${item.qty} <span>₹${item.Price * item.qty}</span></div>`;  
-      total += (item.Price * item.qty);  
-  });  
-  document.getElementById("cartItems").innerHTML = h;  
-  document.getElementById("total").innerText = total;  
-}  
-  
-function openQuickOrder(p) {  
-    currentQuickItem = p;  
-    document.getElementById("selectedItemName").innerText = "Item: " + (p["Product Name"] || p.Name);  
-    document.getElementById("quickOrderBox").classList.remove("hidden");  
-}  
-  
-function closeQuickOrder() { document.getElementById("quickOrderBox").classList.add("hidden"); }  
-  
-// 🔥 FIXED: Decreases stock in both Sheet and Firebase
-async function confirmQuickOrder() {  
-    const data = {  
-        "Customer Name": qName.value,  
-        "Mobile": qMobile.value,  
-        "Address": qAddress.value,  
-        "Products": (currentQuickItem["Product Name"] || currentQuickItem.Name),  
-        "Total": currentQuickItem.Price,  
-        "Barcode": currentQuickItem.Barcode,
-        "Status": "Pending"  
+    const firebaseConfig = {  
+        apiKey: "AIzaSyCH2di4fAKw8vA80Cv8BMobi-v1p0I",   
+        authDomain: "nncart.firebaseapp.com",  
+        projectId: "nncart",  
+        storageBucket: "nncart.firebasestorage.app",  
+        messagingSenderId: "662993037031",  
+        appId: "1:662993037031:web:893e379fe374cb74d26442"  
     };  
-    await submitLogic(data);  
-    closeQuickOrder();  
-}  
   
-async function submitLogic(data) {  
-    try {  
-        // 1. Order to Firebase
-        await db.collection("orders").add(data);  
-        
-        // 2. Order to Sheet & Stock Update in Sheet
-        await fetch(SHEET_URL, { 
-            method: "POST", 
-            body: JSON.stringify({ action: "placeOrder", ...data }) 
-        });
-        await fetch(SHEET_URL + `?action=updateStock&barcode=${data.Barcode}&qty=1`);
-
-        // 3. Stock Update in Firebase
-        const fbSnap = await db.collection("products").where("Barcode", "==", data.Barcode).get();
-        fbSnap.forEach(doc => {
-            let newStock = (doc.data().Stock || 1) - 1;
-            doc.ref.update({ Stock: newStock });
-        });
-
-        alert("Order Success ✅ Stock Updated");  
-        loadProducts(); 
-    } catch(e) { alert("Error ❌"); }  
-}  
+    const app = initializeApp(firebaseConfig);  
+    const db = getFirestore(app);  
   
-loadProducts();  
-</script>
-
-<footer class="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 flex justify-around py-3 z-[100]">  
-    <button onclick="location.reload()" class="flex flex-col items-center text-red-600">  
-        <i class="fa-solid fa-house text-xl"></i>  
-        <span class="text-[10px] font-bold mt-1">HOME</span>  
-    </button>  
-    <button onclick="document.getElementById('products').scrollIntoView()" class="flex flex-col items-center text-gray-500">  
-        <i class="fa-solid fa-layer-group text-xl"></i>  
-        <span class="text-[10px] font-bold mt-1">CATEGORIES</span>  
-    </button>  
-    <button onclick="alert('Orders track feature coming soon!')" class="flex flex-col items-center text-gray-500">  
-        <i class="fa-solid fa-truck-fast text-xl"></i>  
-        <span class="text-[10px] font-bold mt-1">ORDERS</span>  
-    </button>  
-    <button onclick="alert('Profile section coming soon!')" class="flex flex-col items-center text-gray-500">  
-        <i class="fa-solid fa-user text-xl"></i>  
-        <span class="text-[10px] font-bold mt-1">ACCOUNT</span>  
-    </button>  
-</footer>  
-</body>  
+    // ⚠️ Apne latest 'Anyone' permission wale URL se replace karein  
+    const INVENTORY_URL = "https://script.google.com/macros/s/AKfycbwegJ1rQaQ23DCTZrmwXwE-gZpclpHs5sYnoNF9ZxPAa19oNWZ_6Ib4uCUe9JEV2Of2/exec";  
+  
+    let html5QrCode = null;  
+  
+    window.startScanner = async () => {  
+        document.getElementById("scanner-wrapper").classList.remove("hidden");  
+        html5QrCode = new Html5Qrcode("scanner");  
+        try {  
+            await html5QrCode.start({ facingMode: "environment" }, { fps: 15, qrbox: 250 },   
+                async (decodedText) => {  
+                    document.getElementById("barcode").value = decodedText;  
+                    document.getElementById("pname").value = "🔎 Searching...";  
+                    stopScanner();  
+                      
+                    try {  
+                        const res = await fetch(`https://world.openfoodfacts.org/api/v2/product/${decodedText}.json`);  
+                        const d = await res.json();  
+                        if (d.status === 1) {  
+                            document.getElementById("pname").value = d.product.product_name || "";  
+                            document.getElementById("image").value = d.product.image_url || "";  
+                            document.getElementById("category").value = d.product.categories?.split(',')[0] || "General";  
+                        }  
+                    } catch (e) { document.getElementById("pname").value = ""; }  
+                }  
+            );  
+        } catch (err) { alert("Camera error"); }  
+    };  
+  
+    window.stopScanner = () => {  
+        if (html5QrCode) {  
+            html5QrCode.stop().then(() => {  
+                document.getElementById("scanner-wrapper").classList.add("hidden");  
+            });  
+        }  
+    };  
+  
+    window.saveProduct = async () => {  
+        const btn = document.getElementById("saveBtn");  
+        const product = {  
+            Barcode: document.getElementById("barcode").value,  
+            Name: document.getElementById("pname").value,  
+            Price: document.getElementById("price").value || "0",  
+            Image: document.getElementById("image").value || "",  
+            Category: document.getElementById("category").value || "General",  
+            Stock: document.getElementById("stock").value || "0",  
+            Color: document.getElementById("color").value || "",  
+            Size: document.getElementById("size").value || ""  
+        };  
+  
+        if (!product.Barcode || !product.Name) return alert("Fill Barcode & Name!");  
+  
+        btn.disabled = true; btn.innerText = "Saving...";  
+  
+        try {  
+            await addDoc(collection(db, "products"), product);  
+            const params = new URLSearchParams({ action: "addProduct", ...product }).toString();  
+            const img = new Image();  
+            img.src = `${INVENTORY_URL}?${params}`;  
+              
+            setTimeout(() => {   
+                alert("✅ Saved Everywhere!");  
+                location.reload();   
+            }, 1200);  
+        } catch (e) {  
+            alert("Error: " + e.message);  
+            btn.disabled = false; btn.innerText = "SAVE BOTH";  
+        }  
+    };  
+  
+    // 🔥 FIXED: Isme photo dikhane ka pura logic add kar diya hai  
+    window.loadProducts = async () => {  
+        try {  
+            // Stats count from Firebase  
+            const snap = await getDocs(collection(db, "products"));  
+            document.getElementById("productsCount").innerText = snap.size;  
+  
+            // List from Google Sheet (To get latest data + Photos)  
+            const response = await fetch(INVENTORY_URL + "?action=getInventory");  
+            const items = await response.json();  
+              
+            let html = "";  
+            items.reverse().forEach(item => { // Reverse takki naya pehle dikhe  
+                html += `  
+                <div class="bg-white p-2 rounded-lg shadow-sm border flex items-center gap-3">  
+                    <img src="${item.Image}" class="w-14 h-14 object-cover rounded bg-gray-100" onerror="this.src='https://via.placeholder.com/60?text=No+Img'">  
+                    <div class="flex-1">  
+                        <h4 class="font-bold text-xs truncate w-40">${item.Name}</h4>  
+                        <p class="text-[10px] text-gray-500">Code: ${item.Barcode}</p>  
+                        <div class="flex justify-between items-center mt-1">  
+                            <span class="text-blue-600 font-bold text-xs">₹${item.Price}</span>  
+                            <span class="bg-gray-100 px-2 py-0.5 rounded text-[9px]">Stock: ${item.Stock}</span>  
+                        </div>  
+                    </div>  
+                </div>`;  
+            });  
+            document.getElementById('products').innerHTML = html || "No products found.";  
+        } catch (e) {   
+            console.error(e);  
+            document.getElementById('products').innerHTML = "Error loading inventory.";  
+        }  
+    };  
+  
+    window.loadOrders = async () => {  
+        try {  
+            const res = await fetch(INVENTORY_URL + "?action=getOrders");  
+            const data = await res.json();  
+            let orders = data.orders || [];   
+            let html = "";  
+            let packed = 0;  
+  
+            orders.forEach(o => {  
+                if(o.Status === "Packed") packed++;  
+                html += `  
+                    <div class="border-b p-2 bg-white rounded-lg shadow-sm mb-1 flex justify-between items-center">  
+                        <div>  
+                            <p class="text-[10px] font-bold">#${o.OrderID} - ${o.Customer}</p>  
+                            <p class="text-[9px] text-gray-400">${o.Date}</p>  
+                        </div>  
+                        <span class="text-[9px] font-bold ${o.Status === 'Packed' ? 'text-green-500' : 'text-red-400'}">${o.Status}</span>  
+                    </div>`;  
+            });  
+            document.getElementById('orders').innerHTML = html;  
+            document.getElementById('ordersCount').innerText = orders.length;  
+            document.getElementById('pending').innerText = orders.length - packed;  
+        } catch (e) { console.log("Orders error"); }  
+    };  
+  
+    loadOrders();  
+    loadProducts();  
+</script>  </body>  
 </html>
