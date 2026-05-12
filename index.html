@@ -1,216 +1,965 @@
 <!DOCTYPE html>
 <html lang="hi">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>NnCart Admin</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://unpkg.com/html5-qrcode"></script>
-    <link rel="manifest" href="manifest.json">
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>NnCart Warehouse Admin</title>
+
+<script src="https://cdn.tailwindcss.com"></script>
+
+<script src="https://unpkg.com/html5-qrcode"></script>
+
+<link rel="manifest" href="manifest.json">
+
+<style>
+
+body{
+    font-family:Arial,sans-serif;
+    background:#f3f4f6;
+}
+
+.card{
+    background:white;
+    border-radius:20px;
+    padding:14px;
+    box-shadow:0 2px 10px rgba(0,0,0,0.08);
+}
+
+.input{
+    width:100%;
+    padding:12px;
+    border:1px solid #ddd;
+    border-radius:14px;
+    outline:none;
+    font-size:14px;
+}
+
+.btn{
+    padding:12px;
+    border:none;
+    border-radius:14px;
+    color:white;
+    font-weight:bold;
+    cursor:pointer;
+}
+
+.blue{background:#2563eb;}
+.green{background:#16a34a;}
+.red{background:#dc2626;}
+.yellow{background:#ca8a04;}
+.purple{background:#7c3aed;}
+.gray{background:#374151;}
+
+</style>
+
 </head>
 
-<body class="bg-gray-100 p-4">
+<body>
+
+<!-- HEADER -->
+
+<div class="sticky top-0 bg-white shadow z-50 p-4 flex justify-between items-center">
+
+    <div>
+
+        <h1 class="text-2xl font-bold text-blue-600">
+            🔥 NnCart Warehouse Admin
+        </h1>
+
+        <p class="text-xs text-gray-500">
+            Smart E-Commerce Warehouse System
+        </p>
+
+    </div>
+
+    <button onclick="startScanner()" class="btn blue">
+        📷 Scan
+    </button>
+
+</div>
+
+<div class="p-4">
+
+<!-- DASHBOARD -->
+
+<div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-5">
+
+    <div class="card">
+        <p class="text-xs text-gray-500">Products</p>
+        <h2 id="productsCount" class="text-2xl font-bold text-blue-600">
+            0
+        </h2>
+    </div>
+
+    <div class="card">
+        <p class="text-xs text-gray-500">Revenue</p>
+        <h2 id="revenue" class="text-2xl font-bold text-green-600">
+            ₹0
+        </h2>
+    </div>
+
+    <div class="card">
+        <p class="text-xs text-gray-500">Orders</p>
+        <h2 id="ordersCount" class="text-2xl font-bold text-purple-600">
+            0
+        </h2>
+    </div>
+
+    <div class="card">
+        <p class="text-xs text-gray-500">Pending</p>
+        <h2 id="pendingCount" class="text-2xl font-bold text-red-500">
+            0
+        </h2>
+    </div>
+
+</div>
+
+<!-- SEARCH -->
+
+<input
+id="search"
+class="input mb-5"
+placeholder="🔍 Search Product..."
+>
+
+<!-- INVENTORY FORM -->
+
+<div class="card mb-5">
+
+    <div class="flex justify-between items-center mb-4">
+
+        <h2 class="text-lg font-bold">
+            📦 Inventory Manager
+        </h2>
+
+        <button onclick="clearForm()" class="btn yellow text-xs">
+            Clear
+        </button>
+
+    </div>
+
+    <!-- ROW -->
+
+    <div class="grid grid-cols-2 gap-2 mb-2">
+
+        <input id="barcode" class="input" placeholder="Barcode">
+
+        <input id="category" class="input" placeholder="Category">
+
+    </div>
+
+    <input id="pname" class="input mb-2" placeholder="Product Name">
+
+    <!-- ROW -->
+
+    <div class="grid grid-cols-2 gap-2 mb-2">
+
+        <input id="price" type="number" class="input" placeholder="Price">
+
+        <input id="stock" type="number" class="input" placeholder="Stock">
+
+    </div>
+
+    <!-- ROW -->
+
+    <div class="grid grid-cols-2 gap-2 mb-2">
+
+        <input id="color" class="input" placeholder="Color">
+
+        <input id="size" class="input" placeholder="Size">
+
+    </div>
+
+    <input id="image" class="input mb-2" placeholder="Image URL">
+
+    <!-- EXTRA WAREHOUSE -->
+
+    <div class="grid grid-cols-2 gap-2 mb-2">
+
+        <input id="rack" class="input" placeholder="Rack Location">
+
+        <input id="warehouse" class="input" placeholder="Warehouse Name">
+
+    </div>
+
+    <!-- PREVIEW -->
+
+    <div class="bg-gray-100 rounded-2xl p-3 mb-4">
+
+        <p class="text-xs text-gray-500 mb-2">
+            Live Preview
+        </p>
+
+        <div class="flex gap-3 items-center">
+
+            <img
+            id="previewImage"
+            src="https://via.placeholder.com/100"
+            class="w-20 h-20 rounded-xl object-cover bg-white"
+            >
+
+            <div>
+
+                <h3 id="previewName" class="font-bold">
+                    Product Name
+                </h3>
+
+                <p id="previewPrice" class="text-green-600 font-bold">
+                    ₹0
+                </p>
+
+                <p id="previewStock" class="text-xs text-gray-500">
+                    Stock: 0
+                </p>
+
+            </div>
+
+        </div>
+
+    </div>
+
+    <!-- BUTTONS -->
+
+    <div class="grid grid-cols-2 gap-2 mb-2">
+
+        <button onclick="startScanner()" class="btn blue">
+            📷 Scan
+        </button>
+
+        <button onclick="saveProduct()" id="saveBtn" class="btn green">
+            💾 Save Product
+        </button>
+
+    </div>
+
+    <div class="grid grid-cols-3 gap-2">
+
+        <button onclick="loadProducts()" class="btn gray">
+            Refresh
+        </button>
+
+        <button onclick="scrollToOrders()" class="btn purple">
+            Orders
+        </button>
+
+        <button onclick="showLowStock()" class="btn red">
+            Low Stock
+        </button>
+
+    </div>
+
+    <!-- SCANNER -->
+
+    <div
+    id="scanner-wrapper"
+    class="hidden mt-4 border-4 border-blue-500 rounded-2xl overflow-hidden">
+
+        <div id="scanner"></div>
+
+        <button
+        onclick="stopScanner()"
+        class="btn red w-full rounded-none">
+            ❌ Cancel Scan
+        </button>
+
+    </div>
+
+</div>
+
+<!-- LOW STOCK -->
+
+<div class="card mb-5">
+
+    <div class="flex justify-between items-center mb-3">
+
+        <h2 class="font-bold text-red-600">
+            ⚠ Low Stock Products
+        </h2>
+
+        <span
+        id="lowStockCount"
+        class="bg-red-500 text-white text-xs px-2 py-1 rounded-full">
+            0
+        </span>
+
+    </div>
+
+    <div id="lowStockProducts"></div>
+
+</div>
+
+<!-- INVENTORY LIST -->
 
 <div class="flex justify-between items-center mb-3">
-    <h1 class="text-xl font-bold text-blue-600">🔥 NnCart Admin</h1>
-    <button onclick="startScanner()" class="bg-blue-500 text-white p-3 rounded-full shadow-lg">📷</button>
+
+    <h2 class="text-lg font-bold">
+        📦 Current Inventory
+    </h2>
+
+    <button onclick="loadProducts()" class="btn blue text-xs">
+        Refresh
+    </button>
+
 </div>
 
-<!-- Dashboard Stats -->
-<div class="grid grid-cols-4 gap-2 mb-3">
-    <div class="bg-white p-2 text-center shadow rounded-lg text-[10px]">Orders<br><b id="ordersCount" class="text-sm">0</b></div>
-    <div class="bg-white p-2 text-center shadow rounded-lg text-[10px]">Revenue<br><b id="revenue" class="text-sm">₹0</b></div>
-    <div class="bg-white p-2 text-center shadow rounded-lg text-[10px] text-red-500">Pending<br><b id="pending" class="text-sm">0</b></div>
-    <div class="bg-white p-2 text-center shadow rounded-lg text-[10px] text-blue-500">Products<br><b id="productsCount" class="text-sm">0</b></div>
+<div id="products" class="space-y-3 mb-6"></div>
+
+<!-- ORDERS -->
+
+<div id="ordersSection">
+
+    <div class="flex justify-between items-center mb-3">
+
+        <h2 class="text-lg font-bold">
+            🛒 Customer Orders
+        </h2>
+
+        <button onclick="loadOrders()" class="btn blue text-xs">
+            Refresh
+        </button>
+
+    </div>
+
+    <div id="orders" class="space-y-3"></div>
+
 </div>
 
-<input id="search" placeholder="Search Orders..." class="border p-2 w-full mb-3 rounded-lg shadow-sm">
-
-<!-- Add Product Section -->
-<div class="bg-white p-3 rounded-xl shadow-md mb-4 border-t-4 border-green-500">
-    <h2 class="font-bold mb-2 flex items-center gap-2">📦 Inventory Manager</h2>
-    <div class="grid grid-cols-2 gap-2">
-        <input id="barcode" placeholder="Barcode" class="border p-2 rounded text-sm font-mono bg-gray-50">
-        <input id="category" placeholder="Category" class="border p-2 rounded text-sm">
-    </div>
-    <input id="pname" placeholder="Product Name" class="border p-2 w-full mt-2 rounded text-sm">
-    <div class="grid grid-cols-3 gap-2 mt-2">
-        <input id="price" placeholder="Price" type="number" class="border p-2 rounded text-sm">
-        <input id="stock" placeholder="Stock" type="number" class="border p-2 rounded text-sm">
-        <input id="size" placeholder="Size" class="border p-2 rounded text-sm">
-    </div>
-    <input id="image" placeholder="Image Direct Link (Postimg)" class="border p-2 w-full mt-2 rounded text-sm">
-    <input id="color" placeholder="Color" class="border p-2 w-full mt-2 rounded text-sm">
-
-    <div class="flex gap-2 mt-4">
-        <button onclick="startScanner()" class="bg-blue-600 text-white p-2 w-full rounded-lg font-bold">SCAN</button>
-        <button id="saveBtn" onclick="saveProduct()" class="bg-green-600 text-white p-2 w-full rounded-lg font-bold">SAVE BOTH</button>
-    </div>
-
-    <div id="scanner-wrapper" class="hidden mt-3 rounded-lg overflow-hidden border-2 border-blue-500">
-        <div id="scanner" style="width:100%;"></div>
-        <button onclick="stopScanner()" class="w-full bg-red-500 text-white p-2 text-xs">CANCEL SCAN</button>
-    </div>
 </div>
 
-<!-- Inventory Display List -->
-<h2 class="font-bold mb-2 text-gray-700 flex justify-between items-center">
-    Current Inventory 
-    <span class="text-[10px] font-normal text-gray-400">Showing last entries</span>
-</h2>
-<div id="products" class="space-y-2 mb-6">
-    <p class="text-center text-gray-400 py-4 text-sm italic">Loading products list...</p>
-</div>
-
-<h2 class="font-bold mt-4 mb-2 text-gray-700">Recent Orders</h2>
-<div id="orders" class="space-y-2"></div>
+<!-- FIREBASE -->
 
 <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.9.0/firebase-app.js";
-    import { getFirestore, collection, getDocs, addDoc } from "https://www.gstatic.com/firebasejs/10.9.0/firebase-firestore.js";
 
-    const firebaseConfig = {
-        apiKey: "AIzaSyCH2di4fAKw8vA80Cv8BMobi-v1p0I", 
-        authDomain: "nncart.firebaseapp.com",
-        projectId: "nncart",
-        storageBucket: "nncart.firebasestorage.app",
-        messagingSenderId: "662993037031",
-        appId: "1:662993037031:web:893e379fe374cb74d26442"
-    };
+import { initializeApp }
+from "https://www.gstatic.com/firebasejs/10.9.0/firebase-app.js";
 
-    const app = initializeApp(firebaseConfig);
-    const db = getFirestore(app);
+import {
 
-    // ⚠️ Apne latest 'Anyone' permission wale URL se replace karein
-    const INVENTORY_URL = "https://script.google.com/macros/s/AKfycbwegJ1rQaQ23DCTZrmwXwE-gZpclpHs5sYnoNF9ZxPAa19oNWZ_6Ib4uCUe9JEV2Of2/exec";
+getFirestore,
+collection,
+getDocs,
+addDoc,
+deleteDoc,
+doc,
+updateDoc
 
-    let html5QrCode = null;
+}
+from "https://www.gstatic.com/firebasejs/10.9.0/firebase-firestore.js";
 
-    window.startScanner = async () => {
-        document.getElementById("scanner-wrapper").classList.remove("hidden");
-        html5QrCode = new Html5Qrcode("scanner");
-        try {
-            await html5QrCode.start({ facingMode: "environment" }, { fps: 15, qrbox: 250 }, 
-                async (decodedText) => {
-                    document.getElementById("barcode").value = decodedText;
-                    document.getElementById("pname").value = "🔎 Searching...";
-                    stopScanner();
-                    
-                    try {
-                        const res = await fetch(`https://world.openfoodfacts.org/api/v2/product/${decodedText}.json`);
-                        const d = await res.json();
-                        if (d.status === 1) {
-                            document.getElementById("pname").value = d.product.product_name || "";
-                            document.getElementById("image").value = d.product.image_url || "";
-                            document.getElementById("category").value = d.product.categories?.split(',')[0] || "General";
-                        }
-                    } catch (e) { document.getElementById("pname").value = ""; }
-                }
-            );
-        } catch (err) { alert("Camera error"); }
-    };
+const firebaseConfig = {
 
-    window.stopScanner = () => {
-        if (html5QrCode) {
-            html5QrCode.stop().then(() => {
-                document.getElementById("scanner-wrapper").classList.add("hidden");
-            });
-        }
-    };
+apiKey:"AIzaSyCH2di4fAKw8vA80Cv8BMobi-v1p0I",
 
-    window.saveProduct = async () => {
-        const btn = document.getElementById("saveBtn");
-        const product = {
-            Barcode: document.getElementById("barcode").value,
-            Name: document.getElementById("pname").value,
-            Price: document.getElementById("price").value || "0",
-            Image: document.getElementById("image").value || "",
-            Category: document.getElementById("category").value || "General",
-            Stock: document.getElementById("stock").value || "0",
-            Color: document.getElementById("color").value || "",
-            Size: document.getElementById("size").value || ""
-        };
+authDomain:"nncart.firebaseapp.com",
 
-        if (!product.Barcode || !product.Name) return alert("Fill Barcode & Name!");
+projectId:"nncart",
 
-        btn.disabled = true; btn.innerText = "Saving...";
+storageBucket:"nncart.firebasestorage.app",
 
-        try {
-            await addDoc(collection(db, "products"), product);
-            const params = new URLSearchParams({ action: "addProduct", ...product }).toString();
-            const img = new Image();
-            img.src = `${INVENTORY_URL}?${params}`;
-            
-            setTimeout(() => { 
-                alert("✅ Saved Everywhere!");
-                location.reload(); 
-            }, 1200);
-        } catch (e) {
-            alert("Error: " + e.message);
-            btn.disabled = false; btn.innerText = "SAVE BOTH";
-        }
-    };
+messagingSenderId:"662993037031",
 
-    // 🔥 FIXED: Isme photo dikhane ka pura logic add kar diya hai
-    window.loadProducts = async () => {
-        try {
-            // Stats count from Firebase
-            const snap = await getDocs(collection(db, "products"));
-            document.getElementById("productsCount").innerText = snap.size;
+appId:"1:662993037031:web:893e379fe374cb74d26442"
 
-            // List from Google Sheet (To get latest data + Photos)
-            const response = await fetch(INVENTORY_URL + "?action=getInventory");
-            const items = await response.json();
-            
-            let html = "";
-            items.reverse().forEach(item => { // Reverse takki naya pehle dikhe
-                html += `
-                <div class="bg-white p-2 rounded-lg shadow-sm border flex items-center gap-3">
-                    <img src="${item.Image}" class="w-14 h-14 object-cover rounded bg-gray-100" onerror="this.src='https://via.placeholder.com/60?text=No+Img'">
-                    <div class="flex-1">
-                        <h4 class="font-bold text-xs truncate w-40">${item.Name}</h4>
-                        <p class="text-[10px] text-gray-500">Code: ${item.Barcode}</p>
-                        <div class="flex justify-between items-center mt-1">
-                            <span class="text-blue-600 font-bold text-xs">₹${item.Price}</span>
-                            <span class="bg-gray-100 px-2 py-0.5 rounded text-[9px]">Stock: ${item.Stock}</span>
-                        </div>
-                    </div>
-                </div>`;
-            });
-            document.getElementById('products').innerHTML = html || "No products found.";
-        } catch (e) { 
-            console.error(e);
-            document.getElementById('products').innerHTML = "Error loading inventory.";
-        }
-    };
+};
 
-    window.loadOrders = async () => {
-        try {
-            const res = await fetch(INVENTORY_URL + "?action=getOrders");
-            const data = await res.json();
-            let orders = data.orders || []; 
-            let html = "";
-            let packed = 0;
+const app = initializeApp(firebaseConfig);
 
-            orders.forEach(o => {
-                if(o.Status === "Packed") packed++;
-                html += `
-                    <div class="border-b p-2 bg-white rounded-lg shadow-sm mb-1 flex justify-between items-center">
-                        <div>
-                            <p class="text-[10px] font-bold">#${o.OrderID} - ${o.Customer}</p>
-                            <p class="text-[9px] text-gray-400">${o.Date}</p>
-                        </div>
-                        <span class="text-[9px] font-bold ${o.Status === 'Packed' ? 'text-green-500' : 'text-red-400'}">${o.Status}</span>
-                    </div>`;
-            });
-            document.getElementById('orders').innerHTML = html;
-            document.getElementById('ordersCount').innerText = orders.length;
-            document.getElementById('pending').innerText = orders.length - packed;
-        } catch (e) { console.log("Orders error"); }
-    };
+const db = getFirestore(app);
 
-    loadOrders();
-    loadProducts();
+const INVENTORY_URL =
+"https://script.google.com/macros/s/YOUR_SCRIPT_ID/exec";
+
+let html5QrCode = null;
+
+let currentEditId = null;
+
+window.scrollToOrders = ()=>{
+
+document
+.getElementById("ordersSection")
+.scrollIntoView({
+behavior:"smooth"
+});
+
+};
+
+window.showLowStock = ()=>{
+
+document
+.getElementById("lowStockProducts")
+.scrollIntoView({
+behavior:"smooth"
+});
+
+};
+
+window.startScanner = async()=>{
+
+document
+.getElementById("scanner-wrapper")
+.classList.remove("hidden");
+
+html5QrCode = new Html5Qrcode("scanner");
+
+try{
+
+await html5QrCode.start(
+
+{ facingMode:"environment" },
+
+{
+fps:10,
+qrbox:250
+},
+
+async(decodedText)=>{
+
+barcode.value = decodedText;
+
+stopScanner();
+
+pname.value = "Searching Product...";
+
+try{
+
+const res = await fetch(
+`https://world.openfoodfacts.org/api/v2/product/${decodedText}.json`
+);
+
+const data = await res.json();
+
+if(data.status === 1){
+
+pname.value =
+data.product.product_name || "";
+
+image.value =
+data.product.image_url || "";
+
+category.value =
+data.product.categories?.split(",")[0] || "";
+
+}
+
+updatePreview();
+
+}catch(e){
+
+alert("API Error");
+
+}
+
+}
+
+);
+
+}catch(err){
+
+alert("Camera Error");
+
+}
+
+};
+
+window.stopScanner = async()=>{
+
+if(html5QrCode){
+
+try{
+await html5QrCode.stop();
+}catch(e){}
+
+document
+.getElementById("scanner-wrapper")
+.classList.add("hidden");
+
+}
+
+};
+
+window.updatePreview = ()=>{
+
+previewImage.src =
+image.value ||
+"https://via.placeholder.com/100";
+
+previewName.innerText =
+pname.value || "Product Name";
+
+previewPrice.innerText =
+"₹" + (price.value || 0);
+
+previewStock.innerText =
+"Stock: " + (stock.value || 0);
+
+};
+
+[
+barcode,
+category,
+pname,
+price,
+stock,
+color,
+size,
+image
+].forEach(input=>{
+
+input.addEventListener("input",updatePreview);
+
+});
+
+window.clearForm = ()=>{
+
+barcode.value = "";
+category.value = "";
+pname.value = "";
+price.value = "";
+stock.value = "";
+color.value = "";
+size.value = "";
+image.value = "";
+rack.value = "";
+warehouse.value = "";
+
+updatePreview();
+
+};
+
+window.saveProduct = async()=>{
+
+const btn =
+document.getElementById("saveBtn");
+
+const product = {
+
+Barcode: barcode.value,
+
+Name: pname.value,
+
+Image: image.value,
+
+Price: price.value,
+
+Category: category.value,
+
+Stock: stock.value,
+
+Color: color.value,
+
+Size: size.value,
+
+Rack: rack.value,
+
+Warehouse: warehouse.value
+
+};
+
+if(!product.Barcode || !product.Name){
+
+alert("Fill Barcode & Product Name");
+
+return;
+
+}
+
+btn.disabled = true;
+
+btn.innerText = "Saving...";
+
+try{
+
+await addDoc(
+collection(db,"products"),
+product
+);
+
+const params = new URLSearchParams({
+
+action:"addProduct",
+
+barcode: barcode.value,
+
+productName: pname.value,
+
+imageUrl: image.value,
+
+price: price.value,
+
+category: category.value,
+
+stock: stock.value,
+
+color: color.value,
+
+size: size.value
+
+}).toString();
+
+const img = new Image();
+
+img.src =
+`${INVENTORY_URL}?${params}`;
+
+alert("✅ Product Saved");
+
+clearForm();
+
+loadProducts();
+
+}catch(e){
+
+alert(e.message);
+
+}
+
+btn.disabled = false;
+
+btn.innerText = "💾 Save Product";
+
+};
+
+window.deleteProduct = async(id)=>{
+
+if(!confirm("Delete Product?")) return;
+
+await deleteDoc(
+doc(db,"products",id)
+);
+
+loadProducts();
+
+};
+
+window.editProduct = (p,id)=>{
+
+barcode.value = p.Barcode;
+category.value = p.Category;
+pname.value = p.Name;
+price.value = p.Price;
+stock.value = p.Stock;
+color.value = p.Color;
+size.value = p.Size;
+image.value = p.Image;
+
+currentEditId = id;
+
+updatePreview();
+
+window.scrollTo({
+top:0,
+behavior:"smooth"
+});
+
+};
+
+window.changeStock = async(id,current,type)=>{
+
+let stock = parseInt(current);
+
+if(type==="plus"){
+stock++;
+}else{
+stock--;
+}
+
+if(stock<0){
+stock = 0;
+}
+
+await updateDoc(
+doc(db,"products",id),
+{
+Stock:String(stock)
+}
+);
+
+loadProducts();
+
+};
+
+window.loadProducts = async()=>{
+
+const snap =
+await getDocs(collection(db,"products"));
+
+productsCount.innerText =
+snap.size;
+
+let html = "";
+
+let revenueTotal = 0;
+
+let lowHtml = "";
+
+let lowCount = 0;
+
+snap.forEach((docSnap)=>{
+
+const p = docSnap.data();
+
+revenueTotal +=
+Number(p.Price || 0)
+*
+Number(p.Stock || 0);
+
+if(Number(p.Stock)<=5){
+
+lowCount++;
+
+lowHtml += `
+
+<div class="bg-red-50 border border-red-200 rounded-xl p-3 mb-2">
+
+<h3 class="font-bold text-sm">
+${p.Name}
+</h3>
+
+<p class="text-xs text-red-500">
+Only ${p.Stock} Left
+</p>
+
+</div>
+
+`;
+
+}
+
+html += `
+
+<div class="card flex gap-3">
+
+<img
+src="${p.Image}"
+class="w-24 h-24 rounded-xl object-cover bg-gray-100"
+onerror="this.src='https://via.placeholder.com/100'"
+>
+
+<div class="flex-1">
+
+<div class="flex justify-between">
+
+<div>
+
+<h3 class="font-bold text-sm">
+${p.Name}
+</h3>
+
+<p class="text-xs text-gray-500 mt-1">
+${p.Category}
+</p>
+
+</div>
+
+${
+Number(p.Stock)<=5
+?
+`<span class="bg-red-100 text-red-600 text-xs px-2 py-1 rounded-full">
+Low
+</span>`
+:
+`<span class="bg-green-100 text-green-600 text-xs px-2 py-1 rounded-full">
+In Stock
+</span>`
+}
+
+</div>
+
+<p class="text-green-600 font-bold text-lg mt-2">
+₹${p.Price}
+</p>
+
+<p class="text-xs text-gray-500">
+Rack: ${p.Rack || "-"}
+</p>
+
+<div class="flex justify-between items-center mt-3">
+
+<div class="flex items-center gap-2">
+
+<button
+onclick="changeStock('${docSnap.id}','${p.Stock}','minus')"
+class="btn red px-3 py-1">
+-
+</button>
+
+<span class="font-bold">
+${p.Stock}
+</span>
+
+<button
+onclick="changeStock('${docSnap.id}','${p.Stock}','plus')"
+class="btn green px-3 py-1">
++
+</button>
+
+</div>
+
+<div class="flex gap-2">
+
+<button
+onclick='editProduct(${JSON.stringify(p)},"${docSnap.id}")'
+class="btn blue text-xs px-3 py-2">
+Edit
+</button>
+
+<button
+onclick="deleteProduct('${docSnap.id}')"
+class="btn red text-xs px-3 py-2">
+Delete
+</button>
+
+</div>
+
+</div>
+
+</div>
+
+</div>
+
+`;
+
+});
+
+products.innerHTML = html;
+
+revenue.innerText =
+"₹" + revenueTotal;
+
+lowStockProducts.innerHTML =
+lowHtml ||
+"<p class='text-gray-400 text-sm'>No Low Stock</p>";
+
+lowStockCount.innerText =
+lowCount;
+
+};
+
+window.loadOrders = async()=>{
+
+try{
+
+const res = await fetch(
+INVENTORY_URL + "?action=getOrders"
+);
+
+const data = await res.json();
+
+const list = data.orders || [];
+
+ordersCount.innerText =
+list.length;
+
+let pending = 0;
+
+let html = "";
+
+list.reverse().forEach(o=>{
+
+if(o.Status==="Pending"){
+pending++;
+}
+
+html += `
+
+<div class="card">
+
+<div class="flex justify-between items-start">
+
+<div>
+
+<h3 class="font-bold text-sm">
+${o.Customer}
+</h3>
+
+<p class="text-xs text-gray-500">
+${o.Mobile}
+</p>
+
+<p class="text-xs text-gray-400">
+${o.Address}
+</p>
+
+</div>
+
+<span class="
+px-3 py-1 rounded-full text-xs font-bold
+
+${
+o.Status==="Pending"
+?
+'bg-red-100 text-red-600'
+:
+'bg-green-100 text-green-600'
+}
+">
+
+${o.Status}
+
+</span>
+
+</div>
+
+<p class="text-sm mt-2 font-bold">
+${o.Products}
+</p>
+
+<p class="text-green-600 font-bold">
+₹${o.Total}
+</p>
+
+<p class="text-xs text-gray-500 mt-1">
+${o.OrderDate}
+</p>
+
+</div>
+
+`;
+
+});
+
+orders.innerHTML = html;
+
+pendingCount.innerText =
+pending;
+
+}catch(e){
+
+console.log(e);
+
+}
+
+};
+
+search.addEventListener("input",()=>{
+
+const value =
+search.value.toLowerCase();
+
+document
+.querySelectorAll("#products > div")
+.forEach(card=>{
+
+card.style.display =
+card.innerText
+.toLowerCase()
+.includes(value)
+?
+"flex"
+:
+"none";
+
+});
+
+});
+
+loadProducts();
+
+loadOrders();
+
 </script>
+
 </body>
 </html>
